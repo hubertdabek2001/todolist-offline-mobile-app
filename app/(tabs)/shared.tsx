@@ -1,8 +1,8 @@
 // app/(tabs)/shared.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Button, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import { getSharedLists } from '../../src/database/repositories';
@@ -22,6 +22,14 @@ export default function SharedListsScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
+  // Stany do zbierania paczek QR
+  const [collectedChunks, setCollectedChunks] = useState<Record<number, string>>({});
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [totalChunks, setTotalChunks] = useState<number>(0);
+
+  const collectedChunksRef = useRef<Record<number, string>>({});
+  const currentSessionIdRef = useRef<string | null>(null);
+
   // Stan na udostępnione listy
   const [sharedLists, setSharedLists] = useState<TodoList[]>([]);
   
@@ -55,7 +63,49 @@ export default function SharedListsScreen() {
   };
 
   const handleBarcodeScanned = async ({ data }: { data: string }) => {
-    setScanned(true);
+    if (scanned) return;
+
+    if (data.startsWith('CHUNK|')) {
+      const parts = data.split('|');
+      const sessionId = parts[1];
+      const index = parseInt(parts[2], 10);
+      const total = parseInt(parts[3], 10);
+      const dataFragment = parts.slice(4).join('|');
+
+      if (sessionId !== currentSessionIdRef.current) {
+        currentSessionIdRef.current = sessionId;
+        collectedChunksRef.current = { [index]: dataFragment };
+        setCurrentSessionId(sessionId);
+        setTotalChunks(total);
+      } else {
+        collectedChunksRef.current[index] = dataFragment;
+      }
+
+      setCollectedChunks({ ...collectedChunksRef.current });
+
+      if (Object.keys(collectedChunksRef.current).length === total) {
+        setScanned(true);
+        const assembledData = Object.keys(collectedChunksRef.current)
+          .map(k => parseInt(k, 10))
+          .sort((a, b) => a - b)
+          .map(k => collectedChunksRef.current[k])
+          .join('');
+
+        currentSessionIdRef.current = null;
+        collectedChunksRef.current = {};
+        setCurrentSessionId(null);
+        setTotalChunks(0);
+        setCollectedChunks({});
+
+        await processQRData(assembledData);
+      }
+    } else {
+      setScanned(true);
+      await processQRData(data);
+    }
+  };
+
+  const processQRData = async (data: string) => {
     try {
       const result = await importListFromQR(data);
       if (result.success && result.listId) {
@@ -67,7 +117,6 @@ export default function SharedListsScreen() {
           pathname: `/list/${result.listId}`,
           params: { name: result.listName || 'Udostępniona lista' }
         });
-
       } else {
         showToast("Spróbuj ponownie", "error");
         setTimeout(() => setScanned(false), 2000);
@@ -136,13 +185,49 @@ return (
         )}
       </View>
       
-      <TouchableOpacity style={styles.fab} onPress={() => setIsScanning(true)}>
+      <TouchableOpacity style={styles.fab} onPress={() => {
+        setScanned(false);
+        setCollectedChunks({});
+        setCurrentSessionId(null);
+        setTotalChunks(0);
+        collectedChunksRef.current = {};
+        currentSessionIdRef.current = null;
+        setIsScanning(true);
+      }}>
         <Ionicons name="qr-code-outline" size={24} color="white" />
         <Text style={styles.fabText}>Zeskanuj listę</Text>
       </TouchableOpacity>
 
       <Modal visible={isScanning} animationType="slide" transparent={false}>
-          {/* ... zawartość modala bez zmian ... */}
+        <View style={styles.modalContainer}>
+          <CameraView
+            style={styles.camera}
+            onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr'],
+            }}
+          />
+          <View style={styles.overlayWrapper}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setIsScanning(false)}>
+              <Ionicons name="close" size={40} color="white" />
+            </TouchableOpacity>
+
+            {totalChunks > 0 ? (
+              <View style={{ width: 250, marginBottom: 20 }}>
+                <View style={{ width: '100%', height: 10, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 5, overflow: 'hidden' }}>
+                  <View style={{ width: `${(Object.keys(collectedChunks).length / totalChunks) * 100}%`, height: '100%', backgroundColor: '#10b981' }} />
+                </View>
+                <Text style={styles.overlayText}>
+                  Collected {Object.keys(collectedChunks).length} / {totalChunks} parts
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.overlayText}>Zeskanuj kod QR</Text>
+            )}
+
+            <View style={styles.scanFrame} />
+          </View>
+        </View>
       </Modal>
     </View>
   );
