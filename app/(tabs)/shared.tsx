@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
   toastSuccess: { backgroundColor: '#10b981' },
   toastError: { backgroundColor: '#f59e0b' },
   toastText: { color: 'white', fontSize: 16, fontWeight: '600' },
-  container: { flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center' },
   text: { textAlign: 'center', marginBottom: 20, paddingHorizontal: 20 },
   emptyText: { textAlign: 'center', color: '#64748b', fontSize: 16, marginTop: 40 },
   fab: { position: 'absolute', bottom: 20, alignSelf: 'center', flexDirection: 'row', backgroundColor: '#2f95dc', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 30, alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },

@@ -52,7 +52,7 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
                 size={20} 
                 color={task.is_completed ? "#10b981" : "#94a3b8"} 
               />
-              <Text style={[styles.taskTitle, task.is_completed && styles.completedTask]}>
+              <Text style={[styles.taskTitle, task.is_completed ? styles.completedTask : undefined]}>
                 {task.title}
               </Text>
             </View>
