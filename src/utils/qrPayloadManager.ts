@@ -3,7 +3,21 @@ import { getDatabase } from '../database/database';
 
 const getDb = () => getDatabase();
 
-export async function exportListToQR(listId: string): Promise<string> {
+export function chunkPayload(payload: string, chunkSize = 800): string[] {
+  if (payload.length <= chunkSize) {
+    return [payload];
+  }
+  const sessionId = Math.random().toString(36).substring(2, 6);
+  const numChunks = Math.ceil(payload.length / chunkSize);
+  const chunks = [];
+  for (let i = 0; i < numChunks; i++) {
+    const chunkData = payload.substring(i * chunkSize, (i + 1) * chunkSize);
+    chunks.push(`CHUNK|${sessionId}|${i}|${numChunks}|${chunkData}`);
+  }
+  return chunks;
+}
+
+export async function exportListToQR(listId: string): Promise<string[]> {
   const db = getDb();
   
   // Pobieramy dane
@@ -23,7 +37,7 @@ export async function exportListToQR(listId: string): Promise<string> {
     s: subTasks.map(sub => ({ i: sub.id, ti: sub.task_id, t: sub.title, c: sub.is_completed }))
   };
 
-  return JSON.stringify(payload);
+  return chunkPayload(JSON.stringify(payload));
 }
 
 export async function importListFromQR(jsonString: string): Promise<{success: boolean, listId?: string, listName?: string}> {

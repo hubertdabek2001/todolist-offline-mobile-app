@@ -7,7 +7,8 @@ import { exportListToQR } from '../../../src/utils/qrPayloadManager';
 
 export default function ShareListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [qrPayload, setQrPayload] = useState<string[] | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -15,26 +16,8 @@ export default function ShareListScreen() {
       if (id) {
         try {
           const payload = await exportListToQR(id);
-          
-          // Zabezpieczenie przed crashem - limit znaków w ładunku
-          // Więcej niż ~2000-2500 znaków powoduje, że kod QR jest nieczytelny dla aparatów 
-          // i może spowodować crash renderera na niektórych telefonach z systemem Android.
-          if (payload.length > 2000) {
-            Alert.alert(
-              "Lista jest za duża",
-              "Masz zbyt wiele zadań na tej liście, by zmieścić je na jednym kodzie QR. Oczyść listę lub usuń ukończone zadania.",
-              [
-                { 
-                  text: "Przejdź do edycji", 
-                  // replace zamiast push, aby zamknąć ten ekran udostępniania i wejść prosto do edycji
-                  onPress: () => router.replace(`/list/edit/${id}`) 
-                }
-              ]
-            );
-            return; // Prerywamy renderowanie kodu QR
-          }
-
           setQrPayload(payload);
+          setCurrentIndex(0);
         } catch (error) {
           console.error("Błąd generowania ładunku:", error);
         }
@@ -42,6 +25,15 @@ export default function ShareListScreen() {
     }
     loadPayload();
   }, [id]);
+
+  useEffect(() => {
+    if (qrPayload && qrPayload.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % qrPayload.length);
+      }, 400);
+      return () => clearInterval(interval);
+    }
+  }, [qrPayload]);
 
   return (
     <View style={styles.container}>
@@ -53,8 +45,13 @@ export default function ShareListScreen() {
             Pokaż ten kod drugiej osobie.{'\n'}Może go zeskanować w zakładce "Wspólne".
           </Text>
           <View style={styles.qrWrapper}>
-            <QRCode value={qrPayload} size={250} />
+            <QRCode value={qrPayload[currentIndex]} size={250} />
           </View>
+          {qrPayload.length > 1 && (
+            <Text style={{ marginTop: 15, color: '#64748b' }}>
+              Wyświetlanie klatki {currentIndex + 1} z {qrPayload.length}
+            </Text>
+          )}
         </View>
       ) : (
         <View style={styles.loadingContainer}>
