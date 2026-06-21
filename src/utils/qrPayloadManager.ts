@@ -1,11 +1,10 @@
 // src/utils/qrPayloadManager.ts
-import * as SQLite from 'expo-sqlite';
+import { getDatabase } from '../database/database';
 
-// Pobieranie instancji bazy
-const getDb = async () => await SQLite.openDatabaseAsync('todolist.db');
+const getDb = () => getDatabase();
 
 export async function exportListToQR(listId: string): Promise<string> {
-  const db = await getDb();
+  const db = getDb();
   
   // Pobieramy dane
   const listData = await db.getFirstAsync<{ id: string; name: string }>('SELECT id, name FROM todo_lists WHERE id = ?', listId);
@@ -32,7 +31,7 @@ export async function importListFromQR(jsonString: string): Promise<{success: bo
     const data = JSON.parse(jsonString);
     if (!data.l || !data.l.i) return { success: false };
 
-    const db = await SQLite.openDatabaseAsync('todolist.db');
+    const db = getDb();
 
     // Używamy transakcji, aby w razie błędu nie zapisać uszkodzonych/niepełnych danych
     await db.runAsync(

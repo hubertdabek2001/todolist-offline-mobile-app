@@ -2,6 +2,7 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { initDatabase } from '../src/database/database';
 
 export default function RootLayout() {
@@ -22,17 +23,21 @@ export default function RootLayout() {
   // Ekran ładowania, dopóki baza nie będzie gotowa
   if (!isDbReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-        <Text>Przygotowywanie bazy danych...</Text>
-      </View>
+      <SafeAreaProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" />
+          <Text>Przygotowywanie bazy danych...</Text>
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // Gdy baza jest gotowa, renderujemy główną nawigację
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+    <SafeAreaProvider>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+    </SafeAreaProvider>
   );
 }

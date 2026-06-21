@@ -1,6 +1,6 @@
 import * as Device from 'expo-device';
 import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
@@ -29,9 +29,11 @@ function getDevMenuHint() {
 }
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={[styles.safeArea, { paddingBottom: insets.bottom + Spacing.three }]}>
         <ThemedView style={styles.heroSection}>
           <AnimatedIcon />
           <ThemedText type="title" style={styles.title}>
@@ -56,7 +58,7 @@ export default function HomeScreen() {
         </ThemedView>
 
         {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
+      </ThemedView>
     </ThemedView>
   );
 }

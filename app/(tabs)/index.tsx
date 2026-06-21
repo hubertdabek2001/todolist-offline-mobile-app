@@ -1,10 +1,13 @@
 // app/(tabs)/index.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Dimensions, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import { createList, getMyLists } from '../../src/database/repositories';
-// Definiujemy prosty interfejs pod to, co zwraca nam zapytanie SQLite
+
+const { width } = Dimensions.get('window');
+
 interface TodoList {
   id: string;
   name: string;
@@ -16,63 +19,63 @@ export default function MyListsScreen() {
   const [newListName, setNewListName] = useState('');
   const router = useRouter();
 
-  
-
-  // Funkcja pobierająca listy z lokalnej bazy
- const loadLists = async () => {
+  const loadLists = async () => {
     try {
-      const data = await getMyLists(); // Zmiana tutaj
+      const data = await getMyLists();
       setLists(data as TodoList[]);
     } catch (error) {
       console.error("Błąd pobierania list:", error);
     }
   };
 
-  // Ładujemy dane przy zamontowaniu komponentu
   useFocusEffect(
-    useCallback(() => {
-      loadLists();
-    }, [])
+    useCallback(() => { loadLists(); }, [])
   );
 
-  // Obsługa dodawania nowej listy
   const handleAddList = async () => {
     if (newListName.trim() === '') return;
-    
     await createList(newListName.trim());
     setNewListName('');
-    await loadLists(); // Odświeżenie widoku
+    await loadLists(); 
   };
-
-  // Renderowanie pojedynczego kafelka listy
-  const renderItem = ({ item }: { item: TodoList }) => (
-  <TouchableOpacity 
-    style={styles.listCard} 
-    onPress={() => router.push({
-      pathname: `/list/${item.id}`,
-      params: { name: item.name }
-    })}
-  >
-    <Text style={styles.listName}>{item.name}</Text>
-    <Ionicons name="chevron-forward" size={24} color="#666" />
-  </TouchableOpacity>
-);
-
 
   return (
     <View style={styles.container}>
-      {/* Lista elementów */}
-      <FlatList
-        data={lists}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Brak list. Dodaj swoją pierwszą listę poniżej!</Text>
-        }
-      />
+      
+      {/* KARUZELA LIST */}
+      <View style={styles.carouselContainer}>
+        {lists.length === 0 ? (
+          <Text style={styles.emptyGlobalText}>Brak list. Utwórz pierwszą listę poniżej!</Text>
+        ) : (
+          <FlatList
+            horizontal
+            data={lists}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            
+            // 1. Zmiana: Precyzyjne zatrzaskiwanie na środku bez błędu Androida
+            snapToOffsets={lists.map((_, i) => i * SNAP_INTERVAL)}
+            
+            // 2. Zmiana: Blokuje przeskakiwanie kilku list na raz przy mocnym machnięciu palcem
+            disableIntervalMomentum={true} 
+            
+            decelerationRate="fast"
+            contentContainerStyle={{ paddingHorizontal: (width - SNAP_INTERVAL) / 2 }}
+            
+            renderItem={({ item }) => (
+              <ListPreviewCard 
+                list={item} 
+                onPress={() => router.push({
+                  pathname: `/list/${item.id}`,
+                  params: { name: item.name }
+                })}
+              />
+            )}
+          />
+        )}
+      </View>
 
-      {/* Pasek dodawania nowej listy na dole ekranu */}
+      {/* PASEK DODAWANIA */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -92,33 +95,18 @@ export default function MyListsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc', // Twój secondaryColor z backendu
+    backgroundColor: '#f8fafc',
   },
-  listContainer: {
-    padding: 16,
+  carouselContainer: {
+    flex: 1, // Zajmuje całą dostępną przestrzeń nad paskiem dodawania
+    paddingVertical: 20, // Odsunięcie od góry i dołu
   },
-  listCard: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  listName: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  emptyText: {
+  emptyGlobalText: {
     textAlign: 'center',
-    marginTop: 40,
-    color: '#666',
+    marginTop: 60,
+    color: '#64748b',
     fontSize: 16,
+    paddingHorizontal: 20,
   },
   inputContainer: {
     flexDirection: 'row',
