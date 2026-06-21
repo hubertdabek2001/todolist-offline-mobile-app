@@ -178,7 +178,7 @@ export default function ListDetailScreen() {
             />
           ) : (
             <Text 
-              style={[styles.taskTitle, item.is_completed && styles.completedText]}
+              style={[styles.taskTitle, item.is_completed ? styles.completedText : undefined]}
               onLongPress={() => handleEditTask(item)}
             >
               {item.title}
@@ -231,7 +231,7 @@ export default function ListDetailScreen() {
                 />
               ) : (
                 <Text 
-                  style={[styles.subTaskTitle, subTask.is_completed && styles.completedText]}
+                  style={[styles.subTaskTitle, subTask.is_completed ? styles.completedText : undefined]}
                   onLongPress={() => handleEditSubTask(subTask)}
                 >
                   {subTask.title}
