@@ -1,7 +1,7 @@
 // app/list/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     FlatList,
@@ -46,17 +46,18 @@ export default function ListDetailScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false); 
   const router = useRouter();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return;
     const fetchedTasks = await getTasksByList(id);
     const fetchedSubTasks = await getSubTasksForList(id);
     setTasks(fetchedTasks);
     setSubTasks(fetchedSubTasks);
-  };
+  }, [id]);
 
   useEffect(() => {
-    loadData();
-  }, [id]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadData();
+  }, [loadData]);
 
   const handleAddItem = async () => {
     if (inputText.trim() === '' || !id || isSubmitting) return;

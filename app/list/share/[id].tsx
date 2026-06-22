@@ -41,6 +41,7 @@ export default function ShareListScreen() {
       }
     }
     loadPayload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   return (
@@ -50,7 +51,7 @@ export default function ShareListScreen() {
       {qrPayload ? (
         <View style={styles.qrContainer}>
           <Text style={styles.infoText}>
-            Pokaż ten kod drugiej osobie.{'\n'}Może go zeskanować w zakładce "Wspólne".
+            Pokaż ten kod drugiej osobie.{'\n'}Może go zeskanować w zakładce &quot;Wspólne&quot;.
           </Text>
           <View style={styles.qrWrapper}>
             <QRCode value={qrPayload} size={250} />

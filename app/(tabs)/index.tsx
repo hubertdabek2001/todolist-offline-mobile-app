@@ -66,6 +66,7 @@ export default function MyListsScreen() {
               <ListPreviewCard 
                 list={item} 
                 onPress={() => router.push({
+                  // @ts-expect-error typed routes incorrectly flag dynamic segments
                   pathname: `/list/${item.id}`,
                   params: { name: item.name }
                 })}
