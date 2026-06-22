@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { exportListToQR } from '../../../src/utils/qrPayloadManager';
+import { useAppTheme } from '../../../src/components/ThemeProvider';
 
 export default function ShareListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [qrPayload, setQrPayload] = useState<string | null>(null);
   const router = useRouter();
+  const { colors } = useAppTheme();
 
   useEffect(() => {
     async function loadPayload() {
@@ -45,22 +47,26 @@ export default function ShareListScreen() {
   }, [id]);
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Udostępnij listę' }} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{
+        title: 'Udostępnij listę',
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text
+      }} />
       
       {qrPayload ? (
         <View style={styles.qrContainer}>
-          <Text style={styles.infoText}>
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             Pokaż ten kod drugiej osobie.{'\n'}Może go zeskanować w zakładce &quot;Wspólne&quot;.
           </Text>
-          <View style={styles.qrWrapper}>
-            <QRCode value={qrPayload} size={250} />
+          <View style={[styles.qrWrapper, { backgroundColor: '#ffffff' }]}>
+            <QRCode value={qrPayload} size={250} color="#000000" backgroundColor="#ffffff" />
           </View>
         </View>
       ) : (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2f95dc" />
-          <Text style={styles.loadingText}>Pakowanie zadań...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Pakowanie zadań...</Text>
         </View>
       )}
     </View>
@@ -68,10 +74,10 @@ export default function ShareListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { alignItems: 'center' },
-  loadingText: { marginTop: 10, color: '#64748b' },
+  loadingText: { marginTop: 10 },
   qrContainer: { alignItems: 'center', padding: 20 },
-  infoText: { textAlign: 'center', fontSize: 16, marginBottom: 30, color: '#475569' },
-  qrWrapper: { padding: 20, backgroundColor: 'white', borderRadius: 16, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 }
+  infoText: { textAlign: 'center', fontSize: 16, marginBottom: 30 },
+  qrWrapper: { padding: 20, borderRadius: 16, elevation: 5, shadowOpacity: 0.1, shadowRadius: 10 }
 });
