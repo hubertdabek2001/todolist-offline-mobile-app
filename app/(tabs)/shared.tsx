@@ -1,6 +1,6 @@
 // app/(tabs)/shared.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Button, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -64,6 +64,7 @@ export default function SharedListsScreen() {
         
         // Przenosimy do wnętrza zeskanowanej listy (która jest teraz w "Wspólne")
         router.push({
+          // @ts-expect-error typed routes incorrectly flag dynamic segments
           pathname: `/list/${result.listId}`,
           params: { name: result.listName || 'Udostępniona lista' }
         });
@@ -73,6 +74,7 @@ export default function SharedListsScreen() {
         setTimeout(() => setScanned(false), 2000);
       }
     } catch (e) {
+      console.error(e);
       showToast("Spróbuj ponownie", "error");
       setTimeout(() => setScanned(false), 2000);
     }
@@ -88,19 +90,6 @@ export default function SharedListsScreen() {
   };
 
   // Renderowanie kafelka pojedynczej, udostępnionej listy
-  const renderItem = ({ item }: { item: TodoList }) => (
-    <TouchableOpacity 
-      style={styles.listCard} 
-      onPress={() => router.push({
-        pathname: `/list/${item.id}`,
-        params: { name: item.name }
-      })}
-    >
-      <Text style={styles.listName}>{item.name}</Text>
-      <Ionicons name="chevron-forward" size={24} color="#666" />
-    </TouchableOpacity>
-  );
-
 return (
     <View style={styles.container}>
       {renderToast()}
@@ -127,6 +116,7 @@ return (
               <ListPreviewCard 
                 list={item} 
                 onPress={() => router.push({
+                  // @ts-expect-error typed routes incorrectly flag dynamic segments
                   pathname: `/list/${item.id}`,
                   params: { name: item.name }
                 })}
@@ -142,7 +132,22 @@ return (
       </TouchableOpacity>
 
       <Modal visible={isScanning} animationType="slide" transparent={false}>
-          {/* ... zawartość modala bez zmian ... */}
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setIsScanning(false)}>
+            <Ionicons name="close-circle" size={40} color="white" />
+          </TouchableOpacity>
+          <CameraView
+            style={styles.camera}
+            onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+          />
+          <View style={styles.overlayWrapper}>
+            <View style={styles.scanFrame} />
+            <Text style={styles.overlayText}>Zeskanuj kod QR z listą</Text>
+          </View>
+        </View>
       </Modal>
     </View>
   );
