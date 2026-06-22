@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { deleteList, getListById, updateListName } from '../../../src/database/repositories';
+import { useAppTheme } from '../../../src/components/ThemeProvider';
 
 export default function EditListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -12,6 +13,7 @@ export default function EditListScreen() {
   const [listName, setListName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
+  const { colors } = useAppTheme();
 
   useEffect(() => {
     async function loadData() {
@@ -55,36 +57,41 @@ export default function EditListScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Stack.Screen options={{ title: 'Ustawienia listy' }} />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <Stack.Screen options={{
+        title: 'Ustawienia listy',
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text
+      }} />
       
       <View style={styles.formContainer}>
-        <Text style={styles.label}>Nazwa listy</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Nazwa listy</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.outlineVariant, color: colors.text }]}
           value={listName}
           onChangeText={setListName}
           placeholder="Wpisz nazwę..."
+          placeholderTextColor={colors.textSecondary}
         />
 
         <TouchableOpacity 
-          style={styles.saveButton} 
+          style={[styles.saveButton, { backgroundColor: colors.primary }]}
           onPress={handleSave}
           disabled={isSaving}
         >
-          <Ionicons name="save-outline" size={20} color="white" />
-          <Text style={styles.saveButtonText}>Zapisz zmiany</Text>
+          <Ionicons name="save-outline" size={20} color={colors.onPrimary} />
+          <Text style={[styles.saveButtonText, { color: colors.onPrimary }]}>Zapisz zmiany</Text>
         </TouchableOpacity>
 
-        <View style={styles.dangerZone}>
-          <Text style={styles.dangerTitle}>Strefa niebezpieczna</Text>
-          <Text style={styles.dangerDescription}>
+        <View style={[styles.dangerZone, { borderColor: colors.outlineVariant }]}>
+          <Text style={[styles.dangerTitle, { color: colors.error }]}>Strefa niebezpieczna</Text>
+          <Text style={[styles.dangerDescription, { color: colors.textSecondary }]}>
             Usunięcie listy kasuje również wszystkie jej logi czasu i zagnieżdżone zadania.
           </Text>
           
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={20} color="white" />
-            <Text style={styles.deleteButtonText}>Usuń listę</Text>
+          <TouchableOpacity style={[styles.deleteButton, { backgroundColor: colors.error }]} onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={20} color={colors.onError} />
+            <Text style={[styles.deleteButtonText, { color: colors.onError }]}>Usuń listę</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -93,43 +100,38 @@ export default function EditListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   formContainer: { padding: 20 },
-  label: { fontSize: 16, fontWeight: '600', color: '#334155', marginBottom: 8 },
+  label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
   input: {
-    backgroundColor: 'white',
     height: 50,
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     marginBottom: 20,
   },
   saveButton: {
-    backgroundColor: '#2f95dc',
     height: 50,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  saveButtonText: { fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
   dangerZone: {
     marginTop: 50,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderColor: '#e2e8f0',
   },
-  dangerTitle: { fontSize: 18, fontWeight: 'bold', color: '#ef4444', marginBottom: 8 },
-  dangerDescription: { fontSize: 14, color: '#64748b', marginBottom: 20 },
+  dangerTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  dangerDescription: { fontSize: 14, marginBottom: 20 },
   deleteButton: {
-    backgroundColor: '#ef4444',
     height: 50,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  deleteButtonText: { fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
 });

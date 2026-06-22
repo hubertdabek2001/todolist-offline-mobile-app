@@ -1,13 +1,27 @@
 // app/(tabs)/_layout.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useAppTheme } from '../../src/components/ThemeProvider';
 
 export default function TabLayout() {
+  const { colors } = useAppTheme();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2f95dc', // Kolor aktywnej zakładki
-        tabBarStyle: { paddingBottom: 5, height: 60, marginBottom: 50 },
+        tabBarActiveTintColor: colors.primary, // Kolor aktywnej zakładki
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          paddingBottom: 5,
+          height: 60,
+          marginBottom: 50,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.outlineVariant
+        },
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
       }}
     >
       <Tabs.Screen
