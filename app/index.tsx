@@ -2,7 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListPreviewCard, { SNAP_INTERVAL } from './../src/components/ListPreviewCard';
 import { useAppTheme } from './../src/components/ThemeProvider';
@@ -18,6 +18,7 @@ interface TodoList {
 export default function MyListsScreen() {
   const [lists, setLists] = useState<TodoList[]>([]);
   const [newListName, setNewListName] = useState('');
+  const [isInputVisible, setIsInputVisible] = useState(false);
   const router = useRouter();
   const { colors, theme } = useAppTheme();
 
@@ -44,7 +45,10 @@ export default function MyListsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}
+    >
       
       {/* HEADER */}
       <View style={[styles.headerContainer, { borderBottomColor: colors.outlineVariant }]}>
@@ -115,21 +119,46 @@ export default function MyListsScreen() {
 
       {/* PASEK DODAWANIA - FLOATING */}
       <View style={styles.floatingInputWrapper}>
-        <View style={[styles.floatingInputContainer, { backgroundColor: colors.surface }]}>
-          <TextInput
-            style={[styles.floatingInput, { color: colors.text }]}
-            placeholder="Dodaj nową listę..."
-            placeholderTextColor={colors.textSecondary}
-            value={newListName}
-            onChangeText={setNewListName}
-            onSubmitEditing={handleAddList}
-          />
-          <TouchableOpacity style={[styles.floatingAddButton, { backgroundColor: colors.primary }]} onPress={handleAddList}>
-            <Ionicons name="add" size={24} color={colors.onPrimary} />
+        {!isInputVisible ? (
+          <TouchableOpacity
+            style={[styles.fabButton, { backgroundColor: colors.primary }]}
+            onPress={() => setIsInputVisible(true)}
+          >
+            <Ionicons name="add" size={28} color={colors.onPrimary} />
           </TouchableOpacity>
-        </View>
+        ) : (
+          <View style={[styles.floatingInputContainer, { backgroundColor: colors.surface }]}>
+            <TextInput
+              style={[styles.floatingInput, { color: colors.text }]}
+              placeholder="Dodaj nową listę..."
+              placeholderTextColor={colors.textSecondary}
+              value={newListName}
+              onChangeText={setNewListName}
+              onSubmitEditing={() => {
+                handleAddList();
+                setIsInputVisible(false);
+              }}
+              autoFocus={true}
+            />
+            <TouchableOpacity
+              style={[styles.floatingCloseButton, { backgroundColor: colors.surfaceVariant }]}
+              onPress={() => setIsInputVisible(false)}
+            >
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.floatingAddButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                handleAddList();
+                setIsInputVisible(false);
+              }}
+            >
+              <Ionicons name="add" size={24} color={colors.onPrimary} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -239,5 +268,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  floatingCloseButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  fabButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
 });
