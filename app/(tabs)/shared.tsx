@@ -64,7 +64,7 @@ export default function SharedListsScreen() {
         
         // Przenosimy do wnętrza zeskanowanej listy (która jest teraz w "Wspólne")
         router.push({
-          // @ts-expect-error typed routes incorrectly flag dynamic segments
+
           pathname: `/list/${result.listId}`,
           params: { name: result.listName || 'Udostępniona lista' }
         });
@@ -116,7 +116,7 @@ return (
               <ListPreviewCard 
                 list={item} 
                 onPress={() => router.push({
-                  // @ts-expect-error typed routes incorrectly flag dynamic segments
+
                   pathname: `/list/${item.id}`,
                   params: { name: item.name }
                 })}
