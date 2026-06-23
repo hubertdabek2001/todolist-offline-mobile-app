@@ -57,12 +57,19 @@ export async function initDatabase() {
     
     // Sprawdzamy, czy nasza nowa kolumna znajduje się na liście
     const hasIsShared = columns.some(col => col.name === 'is_shared');
+    const hasPrimaryColor = columns.some(col => col.name === 'primary_color');
 
     if (!hasIsShared) {
       console.log("Wykryto brakującą kolumnę! Trwa aktualizacja bazy...");
       // Używamy runAsync, co na Androidzie działa stabilniej dla operacji strukturalnych
       await db.runAsync('ALTER TABLE todo_lists ADD COLUMN is_shared INTEGER DEFAULT 0;');
       console.log("Kolumna is_shared została pomyślnie dodana.");
+    }
+
+    if (!hasPrimaryColor) {
+      console.log("Wykryto brakującą kolumnę primary_color! Trwa aktualizacja bazy...");
+      await db.runAsync("ALTER TABLE todo_lists ADD COLUMN primary_color TEXT DEFAULT '#ffffff';");
+      console.log("Kolumna primary_color została pomyślnie dodana.");
     }
   } catch (error) {
     console.error("Błąd podczas inicjalizacji bazy danych:", error);

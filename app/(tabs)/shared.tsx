@@ -15,6 +15,7 @@ interface TodoList {
   id: string;
   name: string;
   is_archived: number;
+  primary_color: string;
 }
 
 export default function SharedListsScreen() {

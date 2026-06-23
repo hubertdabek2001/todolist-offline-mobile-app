@@ -103,8 +103,8 @@ export async function toggleSubTaskStatus(subTaskId: string, currentStatus: numb
 export async function getListById(id: string) {
   const safeId = Array.isArray(id) ? id[0] : id;
   const db = getDb();
-  return await db.getFirstAsync<{ id: string; name: string }>(
-    'SELECT id, name FROM todo_lists WHERE id = ?', 
+  return await db.getFirstAsync<{ id: string; name: string; primary_color: string }>(
+    'SELECT id, name, primary_color FROM todo_lists WHERE id = ?',
     safe(safeId)
   );
 }
@@ -113,6 +113,12 @@ export async function updateListName(id: string, newName: string) {
   const safeId = Array.isArray(id) ? id[0] : id;
   const db = getDb();
   await db.runAsync('UPDATE todo_lists SET name = ? WHERE id = ?', safe(newName), safe(safeId));
+}
+
+export async function updateListDetails(id: string, newName: string, newColor: string) {
+  const safeId = Array.isArray(id) ? id[0] : id;
+  const db = getDb();
+  await db.runAsync('UPDATE todo_lists SET name = ?, primary_color = ? WHERE id = ?', safe(newName), safe(newColor), safe(safeId));
 }
 
 export async function deleteList(id: string) {
