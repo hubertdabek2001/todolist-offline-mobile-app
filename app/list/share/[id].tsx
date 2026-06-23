@@ -1,72 +1,68 @@
 // app/list/share/[id].tsx
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { useAppTheme } from '../../../src/components/ThemeProvider';
-import { exportListToQR } from '../../../src/utils/qrPayloadManager';
+import { exportListToQRChunks } from '../../../src/utils/qrPayloadManager';
 
 export default function ShareListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [chunks, setChunks] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
-  const { colors } = useAppTheme();
 
   useEffect(() => {
     async function loadPayload() {
       if (id) {
         try {
-          const payload = await exportListToQR(id);
-          
-          // Zabezpieczenie przed crashem - limit znaków w ładunku
-          // Więcej niż ~2000-2500 znaków powoduje, że kod QR jest nieczytelny dla aparatów 
-          // i może spowodować crash renderera na niektórych telefonach z systemem Android.
-          if (payload.length > 2000) {
-            Alert.alert(
-              "Lista jest za duża",
-              "Masz zbyt wiele zadań na tej liście, by zmieścić je na jednym kodzie QR. Oczyść listę lub usuń ukończone zadania.",
-              [
-                { 
-                  text: "Przejdź do edycji", 
-                  // replace zamiast push, aby zamknąć ten ekran udostępniania i wejść prosto do edycji
-                  onPress: () => router.replace(`/list/edit/${id}`) 
-                }
-              ]
-            );
-            return; // Prerywamy renderowanie kodu QR
-          }
+          // TODO: W przyszłości pobierz te dane z SecureStore / lokalnego stanu profilu
+          const userEmail = "twoj@email.com"; 
+          const userName = "Użytkownik";
 
-          setQrPayload(payload);
+          const generatedChunks = await exportListToQRChunks(id, userEmail, userName);
+          setChunks(generatedChunks);
         } catch (error) {
           console.error("Błąd generowania ładunku:", error);
         }
       }
     }
     loadPayload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Animacja kodu QR
+  useEffect(() => {
+    if (chunks.length <= 1) return; // Brak potrzeby animacji dla 1 klatki
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % chunks.length);
+    }, 250); // Zmiana klatki co 250ms (4 FPS) - idealne dla aparatów
+    
+    return () => clearInterval(interval);
+  }, [chunks]);
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ 
-        title: 'Udostępnij listę', 
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text
-      }} />
+    <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Udostępnij listę' }} />
       
-      {qrPayload ? (
+      {chunks.length > 0 ? (
         <View style={styles.qrContainer}>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Pokaż ten kod drugiej osobie.{'\n'}Może go zeskanować w zakładce &quot;Wspólne&quot;.
+          <Text style={styles.infoText}>
+            Pokaż ten animowany kod drugiej osobie. {'\n'}Aparat automatycznie zbierze wszystkie części.
           </Text>
-          <View style={[styles.qrWrapper, { backgroundColor: '#ffffff' }]}>
-            <QRCode value={qrPayload} size={250} color="#000000" backgroundColor="#ffffff" />
+          
+          <View style={styles.qrWrapper}>
+            {/* Wyświetlamy obecną "klatkę" animacji */}
+            <QRCode value={chunks[currentIndex]} size={280} />
           </View>
+          
+          <Text style={styles.progressText}>
+            Wysyłanie klatki {currentIndex + 1} z {chunks.length}
+          </Text>
         </View>
       ) : (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Pakowanie zadań...</Text>
+          <ActivityIndicator size="large" color="#006196" />
+          <Text style={styles.loadingText}>Pakowanie zadań do wysyłki...</Text>
         </View>
       )}
     </View>
@@ -74,10 +70,11 @@ export default function ShareListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#f7f9fb', justifyContent: 'center', alignItems: 'center' },
   loadingContainer: { alignItems: 'center' },
-  loadingText: { marginTop: 10 },
+  loadingText: { marginTop: 10, color: '#64748b' },
   qrContainer: { alignItems: 'center', padding: 20 },
-  infoText: { textAlign: 'center', fontSize: 16, marginBottom: 30 },
-  qrWrapper: { padding: 20, borderRadius: 16, elevation: 5, shadowOpacity: 0.1, shadowRadius: 10 }
+  infoText: { textAlign: 'center', fontSize: 16, marginBottom: 30, color: '#475569' },
+  progressText: { marginTop: 30, fontSize: 18, fontWeight: 'bold', color: '#006196' },
+  qrWrapper: { padding: 20, backgroundColor: 'white', borderRadius: 16, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 }
 });

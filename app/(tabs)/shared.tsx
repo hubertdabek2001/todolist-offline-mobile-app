@@ -23,6 +23,10 @@ export default function SharedListsScreen() {
   const [scanned, setScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [scannedChunks, setScannedChunks] = useState<Map<number, string>>(new Map());
+  const [currentSession, setCurrentSession] = useState<string | null>(null);
+  const [expectedTotal, setExpectedTotal] = useState<number>(1);
+  const [senderInfo, setSenderInfo] = useState<{email: string, name: string} | null>(null);
   
   // Stan na udostępnione listy
   const [sharedLists, setSharedLists] = useState<TodoList[]>([]);
@@ -58,29 +62,71 @@ export default function SharedListsScreen() {
   };
 
   const handleBarcodeScanned = async ({ data }: { data: string }) => {
-    setScanned(true);
-    try {
-      const result = await importListFromQR(data);
-      if (result.success && result.listId) {
-        setIsScanning(false); 
-        showToast("Zeskanowano pomyślnie", "success");
-        
-        // Przenosimy do wnętrza zeskanowanej listy (która jest teraz w "Wspólne")
-        router.push({
-          pathname: `/list/${result.listId}`,
-          params: { name: result.listName || 'Udostępniona lista' }
-        } as any);
+  // Jeśli to nie jest nasz chunk, ignoruj
+  if (!data.startsWith('CHUNK|')) return;
 
-      } else {
-        showToast("Spróbuj ponownie", "error");
+  const parts = data.split('|');
+  const sessionId = parts[1];
+  const email = parts[2];
+  const name = parts[3];
+  const index = parseInt(parts[4], 10);
+  const total = parseInt(parts[5], 10);
+  
+  // Łączymy resztę z powrotem w razie, gdyby JSON zawierał znak '|'
+  const payloadData = parts.slice(6).join('|');
+
+  // Funkcja resetująca stan przy nowym kodzie QR
+  if (currentSession !== sessionId) {
+    setCurrentSession(sessionId);
+    setExpectedTotal(total);
+    setSenderInfo({ email, name });
+    const newMap = new Map();
+    newMap.set(index, payloadData);
+    setScannedChunks(newMap);
+    return;
+  }
+
+  // Zbieranie klatek w obecnej sesji
+  if (!scannedChunks.has(index)) {
+    const newMap = new Map(scannedChunks);
+    newMap.set(index, payloadData);
+    setScannedChunks(newMap);
+
+    // CZY MAMY JUŻ WSZYSTKIE KLATKI?
+    if (newMap.size === total) {
+      setScanned(true); // Blokuje aparat
+      
+      // Sklejamy JSON z powrotem, upewniając się, że kolejność jest właściwa
+      const completeJson = Array.from(newMap.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(entry => entry[1])
+        .join('');
+
+      try {
+        const result = await importListFromQR(completeJson);
+        if (result.success && result.listId) {
+          setIsScanning(false); 
+          showToast(`Pobrano od: ${name}`, "success"); // Używa zdekodowanej nazwy z kodu QR!
+          
+          router.push({
+            pathname: `/list/${result.listId}`,
+            params: { name: result.listName || 'Udostępniona lista' }
+          });
+        } else {
+          showToast("Uszkodzone dane. Spróbuj ponownie.", "error");
+          setTimeout(() => setScanned(false), 2000);
+        }
+      } catch (e) {
+        showToast("Błąd łączenia pliku", "error");
         setTimeout(() => setScanned(false), 2000);
       }
-    } catch (e) {
-      console.error(e);
-      showToast("Spróbuj ponownie", "error");
-      setTimeout(() => setScanned(false), 2000);
+      
+      // Czyszczenie sesji po imporcie
+      setCurrentSession(null);
+      setScannedChunks(newMap);
     }
-  };
+  }
+};
 
   const renderToast = () => {
     if (!toast) return null;
@@ -145,8 +191,28 @@ return (
             }}
           />
           <View style={styles.overlayWrapper}>
-            <View style={[styles.scanFrame, { borderColor: colors.success }]} />
-            <Text style={styles.overlayText}>Zeskanuj kod QR z listą</Text>
+            <View style={styles.scanFrame} />
+            
+            {/* Nowy dynamiczny tekst skanowania */}
+            {currentSession ? (
+              <>
+                <Text style={styles.overlayText}>
+                  Odbieranie od: {senderInfo?.name}
+                </Text>
+                <Text style={[styles.overlayText, { color: '#10b981', fontSize: 24 }]}>
+                  Pobrano {scannedChunks.size} / {expectedTotal}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.overlayText}>Nakieruj aparat na animowany kod QR</Text>
+            )}
+
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={() => { setIsScanning(false); setScanned(false); setCurrentSession(null); setScannedChunks(new Map()); }}
+            >
+              <Ionicons name="close-circle" size={48} color="white" />
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
