@@ -4,18 +4,15 @@ import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
-// Importujemy zaprojektowane przez Ciebie komponenty jako "Kroki"
 import LoginScreen from './LoginScreen';
 import SetupProfileScreen from './SetupProfileScreen';
 import VerifyScreen from './VerifyScreen';
-import WelcomeScreen from './WelcomeScreen'; // (lub WelcomeScreen, w zależności od tego jak nazwałeś import)
+import WelcomeScreen from './WelcomeScreen';
 
 export default function EntryScreen() {
   const router = useRouter();
   
-  // Stan logiki wyświetlania: LOADING -> WELCOME -> LOGIN -> VERIFY -> SETUP -> (TABS)
   const [step, setStep] = useState<'LOADING' | 'WELCOME' | 'LOGIN' | 'VERIFY' | 'SETUP'>('LOADING');
-  
   const [email, setEmail] = useState('');
   const [jwtToken, setJwtToken] = useState('');
 
@@ -24,6 +21,12 @@ export default function EntryScreen() {
   }, []);
 
   const checkLoginStatus = async () => {
+    // 🛠️ NARZĘDZIE DEWELOPERSKIE: 
+    // Odkomentuj poniższą linijkę, zapisz plik, a aplikacja usunie Twój token i pokaże WelcomeScreen.
+    // Jak już go zobaczysz, zakomentuj ją z powrotem, aby logowanie znów działało!
+    
+    // await SecureStore.deleteItemAsync('userToken'); 
+
     const token = await SecureStore.getItemAsync('userToken');
     if (token) {
       // Użytkownik jest zalogowany - wrzucamy go od razu do nawigacji (tabs)
@@ -38,7 +41,6 @@ export default function EntryScreen() {
       setJwtToken(token);
       setStep('SETUP');
     } else {
-      // Zapisujemy token bezpiecznie na urządzeniu i przechodzimy do aplikacji
       await SecureStore.setItemAsync('userToken', token);
       router.replace('/(tabs)');
     }
@@ -49,7 +51,6 @@ export default function EntryScreen() {
     router.replace('/(tabs)');
   };
 
-  // --- RENDEROWANIE KROKOWE ---
   if (step === 'LOADING') {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

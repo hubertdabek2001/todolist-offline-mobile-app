@@ -1,7 +1,8 @@
 // app/LoginScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../src/utils/api';
 
 interface LoginScreenProps {
@@ -28,19 +29,31 @@ export default function LoginScreen({ onBack, onSubmitEmail }: LoginScreenProps)
     setIsLoading(true);
 
     try {
+      // 1. LOG: Co dokładnie próbujemy wywołać?
+      console.log(`[LOGIN] Wysyłam żądanie na: ${API_URL}/auth/request-otp`);
+      console.log(`[LOGIN] Payload:`, { email: email.trim() });
+
       const response = await fetch(`${API_URL}/auth/request-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
 
+      // 2. LOG: Jaki był status odpowiedzi?
+      console.log(`[LOGIN] Status odpowiedzi: ${response.status}`);
+
       if (response.ok) {
-        onSubmitEmail(email.trim()); // Przejście do ekranu Verify
+        onSubmitEmail(email.trim()); 
       } else {
+        // 3. LOG: Treść błędu z backendu
+        const errorText = await response.text();
+        console.error(`[LOGIN] Błąd z serwera:`, errorText);
         setError('Wystąpił błąd podczas wysyłania kodu. Spróbuj ponownie.');
       }
-    } catch (e) {
-      setError('Brak połączenia z serwerem. Sprawdź IP w api.ts');
+    } catch (e: any) {
+      // 4. LOG: Błąd sieci (np. brak neta, zły adres IP, firewall)
+      console.error(`[LOGIN] BŁĄD SIECI (Catch):`, e.message, e);
+      setError(`Błąd sieci: ${e.message}`);
     } finally {
       setIsLoading(false);
     }

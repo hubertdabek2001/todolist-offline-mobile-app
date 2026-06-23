@@ -1,17 +1,10 @@
-import {
-  Dimensions,
-  ImageBackground,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native';
-import { Screen } from '../src/constants/types';
-import { CheckCircle2 } from './Icons';
+// app/WelcomeScreen.tsx
+import { Ionicons } from '@expo/vector-icons';
+import { Dimensions, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface WelcomeScreenProps {
-  onNavigate: (screen: Screen) => void;
+  onNavigate: () => void;
   onSkipAuth: () => void;
 }
 
@@ -40,7 +33,7 @@ export default function WelcomeScreen({ onNavigate, onSkipAuth }: WelcomeScreenP
           <View style={styles.identityContainer}>
             {/* App Logo */}
             <View style={styles.logoCircle}>
-              <CheckCircle2 color="#006196" size={42} strokeWidth={1.5} />
+              <Ionicons name="checkmark-circle" size={42} color="#006196" />
             </View>
 
             {/* App Name */}
@@ -60,7 +53,7 @@ export default function WelcomeScreen({ onNavigate, onSkipAuth }: WelcomeScreenP
             {/* Primary Action Button (Login) */}
             <TouchableOpacity 
               activeOpacity={0.8}
-              onPress={() => onNavigate(Screen.LOGIN)}
+              onPress={onNavigate}
               style={[styles.button, styles.primaryButton]}
             >
               <Text style={styles.primaryButtonText}>Zaloguj się</Text>
@@ -69,7 +62,7 @@ export default function WelcomeScreen({ onNavigate, onSkipAuth }: WelcomeScreenP
             {/* Secondary Action Button (Sign up) */}
             <TouchableOpacity 
               activeOpacity={0.8}
-              onPress={() => onNavigate(Screen.LOGIN)}
+              onPress={onNavigate}
               style={[styles.button, styles.secondaryButton]}
             >
               <Text style={styles.secondaryButtonText}>Załóż konto</Text>
@@ -100,7 +93,7 @@ const styles = StyleSheet.create({
     opacity: 0.25,
   },
   overlay: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   safeArea: {
@@ -145,7 +138,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.5,
     marginBottom: 8,
-    fontFamily: 'Inter',
   },
   description: {
     fontSize: 15,
@@ -155,7 +147,6 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     lineHeight: 22,
     opacity: 0.9,
-    fontFamily: 'Inter',
   },
   actionsContainer: {
     width: '100%',
@@ -181,7 +172,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter',
   },
   secondaryButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -192,7 +182,6 @@ const styles = StyleSheet.create({
     color: '#006196',
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter',
   },
   tertiaryButton: {
     alignItems: 'center',
@@ -204,7 +193,6 @@ const styles = StyleSheet.create({
     color: '#006196',
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter',
   },
   tertiaryUnderline: {
     width: 140,
