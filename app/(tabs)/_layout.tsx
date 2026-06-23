@@ -12,7 +12,8 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary, // Kolor aktywnej zakładki
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: { 
-          paddingBottom: 5, 
+          paddingBottom: 5,
+          marginBottom: 48, 
           height: 60, 
           backgroundColor: colors.surface,
           borderTopColor: colors.outlineVariant

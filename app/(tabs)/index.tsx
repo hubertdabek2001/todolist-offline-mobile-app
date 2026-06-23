@@ -47,7 +47,7 @@ export default function MyListsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       
       {/* HEADER */}
-      <View style={[styles.headerContainer, { borderBottomColor: colors.outlineVariant }]}>
+      <View style={[styles.headerContainer, {backgroundColor: colors.background, borderBottomColor: colors.outlineVariant }]}>
         <TouchableOpacity style={styles.headerIcon}>
           <Ionicons name="checkmark-circle-outline" size={28} color={colors.primary} />
         </TouchableOpacity>

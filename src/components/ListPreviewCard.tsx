@@ -2,7 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getTasksByList, Task } from '../database/repositories';
 import { useAppTheme } from './ThemeProvider';
 
@@ -50,18 +50,42 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
       ]}
     >
       <View style={styles.innerContainer}>
-        <View style={styles.iconContainer}>
-          <Ionicons name={defaultIcon} size={28} color={colors.onPrimary} />
+        <View style={styles.headerSection}>
+          <View style={styles.iconContainer}>
+            <Ionicons name={defaultIcon} size={28} color={colors.onPrimary} />
+          </View>
+
+          <View style={styles.textContainer}>
+            <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={2}>
+              {list.name}
+            </Text>
+            <Text style={[styles.taskCount, { color: colors.textSecondary }]}>
+              {totalCount} zadań
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.textContainer}>
-          <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={2}>
-            {list.name}
-          </Text>
-          <Text style={[styles.taskCount, { color: colors.textSecondary }]}>
-            {totalCount} zadań
-          </Text>
-        </View>
+        <ScrollView style={styles.tasksContainer} showsVerticalScrollIndicator={false}>
+          {tasks.map((task) => (
+            <View key={task.id} style={styles.taskRow}>
+              <Ionicons 
+                name={task.is_completed ? 'checkbox-outline' : 'square-outline'} 
+                size={18} 
+                color={task.is_completed ? colors.success : colors.outline} 
+              />
+              <Text 
+                style={[
+                  styles.taskText, 
+                  { color: task.is_completed ? colors.textSecondary : colors.text },
+                  task.is_completed ? styles.taskTextCompleted : undefined
+                ]}
+                numberOfLines={1}
+              >
+                {task.title}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
 
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarBackground, { backgroundColor: colors.surfaceVariant }]} />
@@ -89,12 +113,15 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
-    height: 220,
+    height: 360,
   },
   innerContainer: {
     flex: 1,
     padding: 16,
     justifyContent: 'space-between',
+  },
+  headerSection: {
+    marginBottom: 16,
   },
   iconContainer: {
     width: 48,
@@ -103,11 +130,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#007abc', // TBD, color matching design
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   textContainer: {
-    flex: 1,
     justifyContent: 'center',
+  },
+  tasksContainer: {
+    flex: 1,
+    marginTop: 8,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  taskText: {
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+  taskTextCompleted: {
+    textDecorationLine: 'line-through',
   },
   listTitle: {
     fontSize: 18,
