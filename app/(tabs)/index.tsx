@@ -6,13 +6,16 @@ import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import { useAppTheme } from '../../src/components/ThemeProvider';
-import { createList, getMyLists } from '../../src/database/repositories';
+import { createList, evaluateAutoPriority, getMyLists } from '../../src/database/repositories';
 
 interface TodoList {
   id: string;
   name: string;
   is_archived: number;
   primary_color: string;
+  priority: string;
+  due_date: string | null;
+  auto_priority: number;
 }
 
 export default function MyListsScreen() {
@@ -25,8 +28,15 @@ export default function MyListsScreen() {
 
   const loadLists = async () => {
     try {
-      const data = await getMyLists();
-      setLists(data as TodoList[]);
+      const data = await getMyLists() as TodoList[];
+      for (const list of data) {
+        if (list.auto_priority === 1) {
+          await evaluateAutoPriority(list.id);
+        }
+      }
+      // Re-fetch after evaluating auto priorities
+      const updatedData = await getMyLists();
+      setLists(updatedData as TodoList[]);
     } catch (error) {
       console.error("Błąd pobierania list:", error);
     }

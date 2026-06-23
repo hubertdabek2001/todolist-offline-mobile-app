@@ -25,9 +25,7 @@ import {
   SubTask,
   Task,
   toggleSubTaskStatus,
-  toggleTaskStatus,
-  updateSubTaskTitle,
-  updateTaskTitle
+  toggleTaskStatus
 } from '../../src/database/repositories';
 
 export default function ListDetailScreen() {
@@ -45,19 +43,34 @@ export default function ListDetailScreen() {
   const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
   const [editingSubTaskTitle, setEditingSubTaskTitle] = useState('');
   
+  const [editingTaskPriority, setEditingTaskPriority] = useState('normal');
+  const [editingTaskDueDate, setEditingTaskDueDate] = useState('');
+  const [editingSubTaskPriority, setEditingSubTaskPriority] = useState('normal');
+  const [editingSubTaskDueDate, setEditingSubTaskDueDate] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false); 
   const [isInputVisible, setIsInputVisible] = useState(false); // NOWY STAN
+  const [editMode, setEditMode] = useState(0);
   const router = useRouter();
 
   const loadData = useCallback(async () => {
     if (!id) return;
+    const { getListById } = await import('../../src/database/repositories');
+    const listData = await getListById(id);
+    if (listData) {
+      setEditMode(listData.edit_mode || 0);
+    }
+
     const fetchedTasks = await getTasksByList(id);
     const fetchedSubTasks = await getSubTasksForList(id);
     setTasks(fetchedTasks);
     setSubTasks(fetchedSubTasks);
   }, [id]);
 
+  // W expo-router zamiast useEffect z setState rekomendowany jest useFocusEffect lub uruchomienie asynchroniczne nie-bezpośrednie,
+  // Ale dla prostoty wyłączamy tutaj regułę dla tego konkretnego bloku (ponieważ getTasksByList itd. to zewnętrzne API bazy, z którymi się synchronizujemy, więc nie ma tu stricte anti-patternu wg dokumentacji React o zewnętrznych store'ach - choć oficjalny jest useSyncExternalStore).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
 
@@ -133,11 +146,14 @@ export default function ListDetailScreen() {
   const handleEditTask = (task: Task) => {
     setEditingTaskId(task.id);
     setEditingTaskTitle(task.title);
+    setEditingTaskPriority(task.priority || 'normal');
+    setEditingTaskDueDate(task.due_date || '');
   };
 
   const handleSaveTaskEdit = async (taskId: string) => {
     if (editingTaskTitle.trim() === '') return;
-    await updateTaskTitle(taskId, editingTaskTitle.trim());
+    const { updateTaskDetails } = await import('../../src/database/repositories');
+    await updateTaskDetails(taskId, editingTaskTitle.trim(), editingTaskPriority, editingTaskDueDate || null);
     setEditingTaskId(null);
     await loadData();
   };
@@ -145,11 +161,14 @@ export default function ListDetailScreen() {
   const handleEditSubTask = (subTask: SubTask) => {
     setEditingSubTaskId(subTask.id);
     setEditingSubTaskTitle(subTask.title);
+    setEditingSubTaskPriority(subTask.priority || 'normal');
+    setEditingSubTaskDueDate(subTask.due_date || '');
   };
 
   const handleSaveSubTaskEdit = async (subTaskId: string) => {
     if (editingSubTaskTitle.trim() === '') return;
-    await updateSubTaskTitle(subTaskId, editingSubTaskTitle.trim());
+    const { updateSubTaskDetails } = await import('../../src/database/repositories');
+    await updateSubTaskDetails(subTaskId, editingSubTaskTitle.trim(), editingSubTaskPriority, editingSubTaskDueDate || null);
     setEditingSubTaskId(null);
     await loadData();
   };
@@ -170,46 +189,73 @@ export default function ListDetailScreen() {
           </TouchableOpacity>
           
           {isEditing ? (
-            <TextInput
-              style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
-              value={editingTaskTitle}
-              onChangeText={setEditingTaskTitle}
-              onBlur={() => handleSaveTaskEdit(item.id)}
-              autoFocus
-            />
+            <View style={styles.editContainer}>
+              <TextInput
+                style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
+                value={editingTaskTitle}
+                onChangeText={setEditingTaskTitle}
+                placeholder="Tytuł zadania"
+                autoFocus
+              />
+              <View style={styles.editRow}>
+                <TextInput
+                  style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
+                  value={editingTaskDueDate}
+                  onChangeText={setEditingTaskDueDate}
+                  placeholder="YYYY-MM-DD"
+                />
+                <TouchableOpacity
+                  onPress={() => setEditingTaskPriority(editingTaskPriority === 'normal' ? 'high' : 'normal')}
+                  style={[styles.priorityToggle, { backgroundColor: editingTaskPriority === 'high' ? colors.error : colors.surfaceVariant }]}
+                >
+                  <Text style={{ color: editingTaskPriority === 'high' ? colors.onError : colors.text, fontSize: 12 }}>
+                    {editingTaskPriority === 'high' ? 'High' : 'Normal'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSaveTaskEdit(item.id)} style={{ marginLeft: 8 }}>
+                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
-            <Text 
-              style={[styles.taskTitle, { color: colors.text }, item.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-              onLongPress={() => handleEditTask(item)}
-            >
-              {item.title}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.taskTitle, { color: item.priority === 'high' ? colors.error : colors.text }, item.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
+                onLongPress={() => { if (editMode === 1) handleEditTask(item); }}
+              >
+                {item.title}
+              </Text>
+              {item.due_date && <Text style={{ fontSize: 12, color: colors.textSecondary }}>Due: {item.due_date}</Text>}
+            </View>
           )}
 
-          {/* Kliknięcie w gałąź automatycznie pokazuje input */}
-          <TouchableOpacity 
-            onPress={() => {
-              setSelectedTaskForSubtask(item);
-              setIsInputVisible(true);
-            }} 
-            style={styles.actionIcon}
-          >
-            <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
-          </TouchableOpacity>
+          {editMode === 1 && !isEditing && (
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedTaskForSubtask(item);
+                  setIsInputVisible(true);
+                }}
+                style={styles.actionIcon}
+              >
+                <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={() => handleEditTask(item)} 
-            style={styles.actionIcon}
-          >
-            <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleEditTask(item)}
+                style={styles.actionIcon}
+              >
+                <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={() => handleDeleteTask(item)} 
-            style={styles.actionIcon}
-          >
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
-          </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDeleteTask(item)}
+                style={styles.actionIcon}
+              >
+                <Ionicons name="trash-outline" size={20} color={colors.error} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {currentSubTasks.map((subTask) => {
@@ -225,35 +271,63 @@ export default function ListDetailScreen() {
               </TouchableOpacity>
               
               {isEditingSubTask ? (
-                <TextInput
-                  style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
-                  value={editingSubTaskTitle}
-                  onChangeText={setEditingSubTaskTitle}
-                  onBlur={() => handleSaveSubTaskEdit(subTask.id)}
-                  autoFocus
-                />
+                <View style={styles.editContainer}>
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
+                    value={editingSubTaskTitle}
+                    onChangeText={setEditingSubTaskTitle}
+                    placeholder="Tytuł podzadania"
+                    autoFocus
+                  />
+                  <View style={styles.editRow}>
+                    <TextInput
+                      style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
+                      value={editingSubTaskDueDate}
+                      onChangeText={setEditingSubTaskDueDate}
+                      placeholder="YYYY-MM-DD"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setEditingSubTaskPriority(editingSubTaskPriority === 'normal' ? 'high' : 'normal')}
+                      style={[styles.priorityToggle, { backgroundColor: editingSubTaskPriority === 'high' ? colors.error : colors.surfaceVariant }]}
+                    >
+                      <Text style={{ color: editingSubTaskPriority === 'high' ? colors.onError : colors.text, fontSize: 12 }}>
+                        {editingSubTaskPriority === 'high' ? 'High' : 'Normal'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleSaveSubTaskEdit(subTask.id)} style={{ marginLeft: 8 }}>
+                      <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ) : (
-                <Text 
-                  style={[styles.subTaskTitle, { color: colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                  onLongPress={() => handleEditSubTask(subTask)}
-                >
-                  {subTask.title}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.subTaskTitle, { color: subTask.priority === 'high' ? colors.error : colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
+                    onLongPress={() => { if (editMode === 1) handleEditSubTask(subTask); }}
+                  >
+                    {subTask.title}
+                  </Text>
+                  {subTask.due_date && <Text style={{ fontSize: 10, color: colors.textSecondary }}>Due: {subTask.due_date}</Text>}
+                </View>
               )}
 
-              <TouchableOpacity 
-                onPress={() => handleEditSubTask(subTask)} 
-                style={styles.actionIcon}
-              >
-                <Ionicons name="pencil-outline" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
+              {editMode === 1 && !isEditingSubTask && (
+                <>
+                  <TouchableOpacity
+                    onPress={() => handleEditSubTask(subTask)}
+                    style={styles.actionIcon}
+                  >
+                    <Ionicons name="pencil-outline" size={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => handleDeleteSubTask(subTask)} 
-                style={styles.actionIcon}
-              >
-                <Ionicons name="trash-outline" size={16} color={colors.error} />
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteSubTask(subTask)}
+                    style={styles.actionIcon}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={colors.error} />
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           );
         })}
@@ -395,6 +469,10 @@ const styles = StyleSheet.create({
   completedText: {
     textDecorationLine: 'line-through',
   },
+  editContainer: { flex: 1 },
+  editRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  editInputSmall: { flex: 1, fontSize: 12, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, marginRight: 8 },
+  priorityToggle: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   editInput: {
     flex: 1,
     fontSize: 16,

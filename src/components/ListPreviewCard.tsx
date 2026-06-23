@@ -12,7 +12,7 @@ export const CARD_MARGIN = 8;
 export const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN * 2;
 
 interface ListPreviewCardProps {
-  list: { id: string; name: string; primary_color?: string | null };
+  list: { id: string; name: string; primary_color?: string | null; priority?: string; due_date?: string | null };
   onPress: () => void;
 }
 
@@ -56,9 +56,10 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
           </View>
 
           <View style={styles.textContainer}>
-            <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={2}>
+            <Text style={[styles.listTitle, { color: list.priority === 'high' ? colors.error : colors.text }]} numberOfLines={2}>
               {list.name}
             </Text>
+            {list.due_date && <Text style={{ fontSize: 10, color: colors.textSecondary, marginBottom: 2 }}>Due: {list.due_date}</Text>}
             <Text style={[styles.taskCount, { color: colors.textSecondary }]}>
               {totalCount} zadań
             </Text>
@@ -73,16 +74,19 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
                 size={18} 
                 color={task.is_completed ? colors.success : colors.outline} 
               />
-              <Text 
-                style={[
-                  styles.taskText, 
-                  { color: task.is_completed ? colors.textSecondary : colors.text },
-                  task.is_completed ? styles.taskTextCompleted : undefined
-                ]}
-                numberOfLines={1}
-              >
-                {task.title}
-              </Text>
+              <View style={{ flex: 1, marginLeft: 8 }}>
+                <Text
+                  style={[
+                    styles.taskText,
+                    { color: task.is_completed ? colors.textSecondary : (task.priority === 'high' ? colors.error : colors.text) },
+                    task.is_completed ? styles.taskTextCompleted : undefined
+                  ]}
+                  numberOfLines={1}
+                >
+                  {task.title}
+                </Text>
+                {task.due_date && <Text style={{ fontSize: 10, color: colors.textSecondary }}>Due: {task.due_date}</Text>}
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -146,7 +150,6 @@ const styles = StyleSheet.create({
   },
   taskText: {
     fontSize: 14,
-    marginLeft: 8,
     flex: 1,
   },
   taskTextCompleted: {
