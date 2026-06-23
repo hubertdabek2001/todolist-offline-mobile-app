@@ -46,6 +46,7 @@ export default function ListDetailScreen() {
   const [editingSubTaskTitle, setEditingSubTaskTitle] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false); 
+  const [isInputVisible, setIsInputVisible] = useState(false); // NOWY STAN
   const router = useRouter();
 
   const loadData = useCallback(async () => {
@@ -57,7 +58,6 @@ export default function ListDetailScreen() {
   }, [id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
 
@@ -75,6 +75,7 @@ export default function ListDetailScreen() {
       }
       
       setInputText('');
+      setIsInputVisible(false); // Zamknięcie po dodaniu
       await loadData();
     } catch (e) {
       console.error("Błąd podczas dodawania:", e);
@@ -153,15 +154,12 @@ export default function ListDetailScreen() {
     await loadData();
   };
 
-  // Komponent renderujący zadanie wraz z jego przypisanymi podzadaniami
   const renderTaskItem = ({ item }: { item: Task }) => {
-    // Filtrujemy podzadania należące do tego konkretnego zadania głównego
     const currentSubTasks = subTasks.filter(st => st.task_id === item.id);
     const isEditing = editingTaskId === item.id;
 
     return (
       <View style={[styles.taskGroupContainer, { backgroundColor: colors.surface, shadowColor: theme === 'dark' ? '#000' : '#000' }]}>
-        {/* Wiersz Zadania Głównego */}
         <View style={styles.taskRow}>
           <TouchableOpacity onPress={() => handleToggleTask(item)} style={styles.checkbox}>
             <Ionicons 
@@ -188,9 +186,12 @@ export default function ListDetailScreen() {
             </Text>
           )}
 
-          {/* Kontener ikon akcji */}
+          {/* Kliknięcie w gałąź automatycznie pokazuje input */}
           <TouchableOpacity 
-            onPress={() => setSelectedTaskForSubtask(item)} 
+            onPress={() => {
+              setSelectedTaskForSubtask(item);
+              setIsInputVisible(true);
+            }} 
             style={styles.actionIcon}
           >
             <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
@@ -211,7 +212,6 @@ export default function ListDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Lista podzadań - renderowana z wcięciem po prawej stronie */}
         {currentSubTasks.map((subTask) => {
           const isEditingSubTask = editingSubTaskId === subTask.id;
           return (
@@ -262,8 +262,7 @@ export default function ListDetailScreen() {
   };
 
   return (
-    <View style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      {/* Konfiguracja paska nagłówka systemu operacyjnego */}
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{ 
           title: name || 'Szczegóły listy', 
@@ -271,18 +270,13 @@ export default function ListDetailScreen() {
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerRight: () => (
-            // Zmiana: kontener otulający dwie ikony
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              
-              {/* Ikona udostępniania */}
               <TouchableOpacity 
                 onPress={() => router.push(`/list/share/${id}`)} 
                 style={{ marginRight: 15, padding: 5 }}
               >
                 <Ionicons name="qr-code-outline" size={26} color={colors.primary} />
               </TouchableOpacity>
-              
-              {/* Ikona ustawień / edycji */}
               <TouchableOpacity 
                 onPress={() => router.push(`/list/edit/${id}`)} 
                 style={{ marginRight: 5, padding: 5 }}
@@ -294,48 +288,75 @@ export default function ListDetailScreen() {
         }} 
       />
 
-      {/* KLUCZOWY ELEMENT: Zapewnia unoszenie się inputu nad klawiaturą ekranową */}
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        behavior={Platform.OS === 'android' ? 'padding' : 'height'} 
         style={styles.container}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0} 
+        keyboardVerticalOffset={Platform.OS === 'android' ? 90 : 0} 
       >
-        <FlatList
-          data={tasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTaskItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Brak zadań na tej liście. Wpisz coś poniżej.</Text>
-          }
-        />
+        {/* Kontener listy rozpychający się na ekranie */}
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={tasks}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTaskItem}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Brak zadań na tej liście. Wpisz coś poniżej.</Text>
+            }
+          />
+        </View>
 
-        {/* Kontener wprowadzania danych automatycznie przesuwany przez KeyboardAvoidingView */}
-        <View style={[styles.inputWrapper, { paddingBottom: insets.bottom + 12, backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
-          {selectedTaskForSubtask && (
-            <View style={[styles.badgeContainer, { backgroundColor: colors.primaryContainer }]}>
-              <Text style={[styles.badgeText, { color: colors.onPrimaryContainer }]}>
-                Dodajesz podzadanie do: <Text style={{fontWeight: '600'}}>{selectedTaskForSubtask.title}</Text>
-              </Text>
-              <TouchableOpacity onPress={() => setSelectedTaskForSubtask(null)}>
-                <Ionicons name="close-circle" size={18} color={colors.error} />
-              </TouchableOpacity>
+        {/* Dolny kontener w naturalnym układzie (bez position absolute) */}
+        <View style={[styles.floatingInputWrapper, { paddingBottom: Math.max(24, insets.bottom + 10) }]}>
+          {!isInputVisible && !selectedTaskForSubtask ? (
+            <TouchableOpacity 
+              style={[styles.fabButton, { backgroundColor: colors.primary }]} 
+              onPress={() => setIsInputVisible(true)}
+            >
+              <Ionicons name="add" size={28} color={colors.onPrimary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.inputWrapperBox, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
+              {selectedTaskForSubtask && (
+                <View style={[styles.badgeContainer, { backgroundColor: colors.primaryContainer }]}>
+                  <Text style={[styles.badgeText, { color: colors.onPrimaryContainer }]}>
+                    Dodajesz podzadanie do: <Text style={{fontWeight: '600'}}>{selectedTaskForSubtask.title}</Text>
+                  </Text>
+                  <TouchableOpacity onPress={() => {
+                    setSelectedTaskForSubtask(null);
+                    // Jeśli chcemy również schować klawiaturę: setIsInputVisible(false);
+                  }}>
+                    <Ionicons name="close-circle" size={18} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View style={styles.inputBar}>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
+                  placeholder={selectedTaskForSubtask ? "Nazwa podzadania..." : "Nazwa nowego zadania..."}
+                  placeholderTextColor={colors.textSecondary}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  onSubmitEditing={handleAddItem}
+                  autoFocus={true} // Automatycznie wywołuje klawiaturę
+                />
+                <TouchableOpacity 
+                  style={[styles.floatingCloseButton, { backgroundColor: colors.surfaceVariant, marginRight: 8 }]} 
+                  onPress={() => {
+                    setIsInputVisible(false);
+                    setSelectedTaskForSubtask(null);
+                    setInputText('');
+                  }}
+                >
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.sendButton, { backgroundColor: colors.primary }]} onPress={handleAddItem}>
+                  <Ionicons name="arrow-up" size={22} color={colors.onPrimary} />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
-
-          <View style={styles.inputBar}>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
-              placeholder={selectedTaskForSubtask ? "Nazwa podzadania..." : "Nazwa nowego zadania..."}
-              placeholderTextColor={colors.textSecondary}
-              value={inputText}
-              onChangeText={setInputText}
-              onSubmitEditing={handleAddItem}
-            />
-            <TouchableOpacity style={[styles.sendButton, { backgroundColor: colors.primary }]} onPress={handleAddItem}>
-              <Ionicons name="arrow-up" size={22} color={colors.onPrimary} />
-            </TouchableOpacity>
-          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -386,11 +407,31 @@ const styles = StyleSheet.create({
   actionIcon: { padding: 6, marginLeft: 4 },
   emptyText: { textAlign: 'center', marginTop: 40 },
   
-  // Stylizacja dolnego paska z inputem uniesionym nad klawiaturę
-  inputWrapper: {
-    borderTopWidth: 1,
+  // --- Style dla FAB i paska wejściowego ---
+  floatingInputWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
+  },
+  fabButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  inputWrapperBox: {
+    padding: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   badgeContainer: {
     flexDirection: 'row',
@@ -412,6 +453,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 15,
     marginRight: 10,
+  },
+  floatingCloseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendButton: {
     width: 44,
