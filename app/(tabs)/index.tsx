@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
+import { useAppTheme } from '../../src/components/ThemeProvider';
 import { createList, getMyLists } from '../../src/database/repositories';
 
 const { width } = Dimensions.get('window');
@@ -18,6 +19,7 @@ export default function MyListsScreen() {
   const [lists, setLists] = useState<TodoList[]>([]);
   const [newListName, setNewListName] = useState('');
   const router = useRouter();
+  const { colors } = useAppTheme();
 
   const loadLists = async () => {
     try {
@@ -40,12 +42,12 @@ export default function MyListsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       
       {/* KARUZELA LIST */}
       <View style={styles.carouselContainer}>
         {lists.length === 0 ? (
-          <Text style={styles.emptyGlobalText}>Brak list. Utwórz pierwszą listę poniżej!</Text>
+          <Text style={[styles.emptyGlobalText, { color: colors.textSecondary }]}>Brak list. Utwórz pierwszą listę poniżej!</Text>
         ) : (
           <FlatList
             horizontal
@@ -66,10 +68,9 @@ export default function MyListsScreen() {
               <ListPreviewCard 
                 list={item} 
                 onPress={() => router.push({
-                  // @ts-expect-error typed routes incorrectly flag dynamic segments
                   pathname: `/list/${item.id}`,
                   params: { name: item.name }
-                })}
+                } as any)}
               />
             )}
           />
@@ -77,16 +78,17 @@ export default function MyListsScreen() {
       </View>
 
       {/* PASEK DODAWANIA */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
           placeholder="Nazwa nowej listy..."
+          placeholderTextColor={colors.textSecondary}
           value={newListName}
           onChangeText={setNewListName}
           onSubmitEditing={handleAddList}
         />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddList}>
-          <Ionicons name="add" size={24} color="white" />
+        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={handleAddList}>
+          <Ionicons name="add" size={24} color={colors.onPrimary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -96,7 +98,6 @@ export default function MyListsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   carouselContainer: {
     flex: 1, // Zajmuje całą dostępną przestrzeń nad paskiem dodawania
@@ -105,29 +106,24 @@ const styles = StyleSheet.create({
   emptyGlobalText: {
     textAlign: 'center',
     marginTop: 60,
-    color: '#64748b',
     fontSize: 16,
     paddingHorizontal: 20,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: 'white',
     borderTopWidth: 1,
-    borderColor: '#eee',
     alignItems: 'center',
   },
   input: {
     flex: 1,
     height: 48,
-    backgroundColor: '#f1f5f9',
     borderRadius: 24,
     paddingHorizontal: 20,
     fontSize: 16,
     marginRight: 12,
   },
   addButton: {
-    backgroundColor: '#2f95dc',
     width: 48,
     height: 48,
     borderRadius: 24,

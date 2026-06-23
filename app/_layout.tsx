@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ThemeProvider } from '../src/components/ThemeProvider';
 import { initDatabase } from '../src/database/database';
 
 export default function RootLayout() {
@@ -34,10 +35,12 @@ export default function RootLayout() {
 
   // Gdy baza jest gotowa, renderujemy główną nawigację
   return (
-    <SafeAreaProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }

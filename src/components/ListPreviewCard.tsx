@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getTasksByList, Task } from '../database/repositories';
+import { useAppTheme } from './ThemeProvider';
 
 const { width } = Dimensions.get('window');
 export const CARD_WIDTH = width * 0.82; 
@@ -17,6 +18,7 @@ interface ListPreviewCardProps {
 
 export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const { colors, theme } = useAppTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -29,12 +31,18 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
     <TouchableOpacity 
       activeOpacity={0.9} 
       onPress={onPress} 
-      style={styles.cardContainer}
+      style={[
+        styles.cardContainer, 
+        { 
+          backgroundColor: colors.surface, 
+          shadowColor: theme === 'dark' ? '#000' : '#000' 
+        }
+      ]}
     >
       {/* Nagłówek bez zmiany struktury, ale usunięto starą funkcję Touchable */}
-      <View style={styles.header}>
-        <Text style={styles.listTitle} numberOfLines={1}>{list.name}</Text>
-        <Ionicons name="expand-outline" size={24} color="#64748b" />
+      <View style={[styles.header, { borderBottomColor: colors.surfaceContainer }]}>
+        <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>{list.name}</Text>
+        <Ionicons name="expand-outline" size={24} color={colors.textSecondary} />
       </View>
 
       <ScrollView 
@@ -43,16 +51,22 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
         showsVerticalScrollIndicator={false}
       >
         {tasks.length === 0 ? (
-          <Text style={styles.emptyText}>Brak zadań. Kliknij, aby dodać.</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Brak zadań. Kliknij, aby dodać.</Text>
         ) : (
           tasks.map((task) => (
             <View key={task.id} style={styles.taskRow}>
               <Ionicons 
                 name={task.is_completed ? "checkmark-circle" : "ellipse-outline"} 
                 size={20} 
-                color={task.is_completed ? "#10b981" : "#94a3b8"} 
+                color={task.is_completed ? colors.success : colors.textSecondary} 
               />
-              <Text style={[styles.taskTitle, task.is_completed ? styles.completedTask : undefined]}>
+              <Text 
+                style={[
+                  styles.taskTitle, 
+                  { color: colors.text }, 
+                  task.is_completed ? [styles.completedTask, { color: colors.textSecondary }] : undefined
+                ]}
+              >
                 {task.title}
               </Text>
             </View>
@@ -67,10 +81,8 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: CARD_WIDTH,
     marginHorizontal: CARD_MARGIN,
-    backgroundColor: 'white',
     borderRadius: 20,
     padding: 16,
-    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -83,21 +95,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
     paddingBottom: 12,
     marginBottom: 12,
   },
   listTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1e293b',
     flex: 1,
   },
   scrollArea: {
     flex: 1,
   },
   emptyText: {
-    color: '#64748b',
     textAlign: 'center',
     marginTop: 20,
     fontStyle: 'italic',
@@ -110,12 +119,9 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 15,
     marginLeft: 10,
-    color: '#334155',
     flex: 1,
   },
   completedTask: {
     textDecorationLine: 'line-through',
-    color: '#94a3b8',
   }
-  // Usunięto style przycisku, który nie jest już potrzebny
 });
