@@ -2,10 +2,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../src/components/ThemeProvider';
-import { deleteList, getListById, updateListDetails } from '../../../src/database/repositories';
+import { deleteList, evaluateAutoPriority, getListById, updateListDetails } from '../../../src/database/repositories';
 
 const PREDEFINED_COLORS = [
   '#ffffff', // Domyślny
@@ -21,6 +21,10 @@ export default function EditListScreen() {
   const insets = useSafeAreaInsets();
   const [listName, setListName] = useState('');
   const [listColor, setListColor] = useState('#ffffff');
+  const [editMode, setEditMode] = useState(0);
+  const [autoPriority, setAutoPriority] = useState(0);
+  const [priority, setPriority] = useState('normal');
+  const [dueDate, setDueDate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
   const { colors } = useAppTheme();
@@ -34,6 +38,10 @@ export default function EditListScreen() {
         if (listData.primary_color) {
           setListColor(listData.primary_color);
         }
+        setEditMode(listData.edit_mode || 0);
+        setAutoPriority(listData.auto_priority || 0);
+        setPriority(listData.priority || 'normal');
+        setDueDate(listData.due_date || '');
       }
     }
     loadData();
@@ -42,7 +50,10 @@ export default function EditListScreen() {
   const handleSave = async () => {
     if (listName.trim() === '' || !id) return;
     setIsSaving(true);
-    await updateListDetails(id, listName.trim(), listColor);
+    await updateListDetails(id, listName.trim(), listColor, editMode, autoPriority, priority, dueDate || null);
+    if (autoPriority === 1) {
+      await evaluateAutoPriority(id);
+    }
     setIsSaving(false);
     Alert.alert("Zapisano", "Ustawienia listy zostały zaktualizowane.", [
       { text: "OK", onPress: () => router.back() }
@@ -77,7 +88,7 @@ export default function EditListScreen() {
         headerTintColor: colors.text
       }} />
       
-      <View style={styles.formContainer}>
+      <ScrollView contentContainerStyle={styles.formContainer}>
         <Text style={[styles.label, { color: colors.text }]}>Nazwa listy</Text>
         <TextInput
           style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.outlineVariant, color: colors.text }]}
@@ -86,6 +97,23 @@ export default function EditListScreen() {
           placeholder="Wpisz nazwę..."
           placeholderTextColor={colors.textSecondary}
         />
+
+        <Text style={[styles.label, { color: colors.text }]}>Termin (YYYY-MM-DD)</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.outlineVariant, color: colors.text }]}
+          value={dueDate}
+          onChangeText={setDueDate}
+          placeholder="Opcjonalnie..."
+          placeholderTextColor={colors.textSecondary}
+        />
+
+        <View style={styles.switchRow}>
+          <Text style={[styles.switchLabel, { color: colors.text }]}>Wysoki priorytet</Text>
+          <Switch 
+            value={priority === 'high' ? true : false} 
+            onValueChange={(val) => setPriority(val ? 'high' : 'normal')} 
+          />
+        </View>
 
         <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Kolor listy</Text>
         <View style={styles.colorsContainer}>
@@ -101,6 +129,22 @@ export default function EditListScreen() {
               onPress={() => setListColor(color)}
             />
           ))}
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={[styles.switchLabel, { color: colors.text }]}>Tryb edycji włączony</Text>
+          <Switch 
+            value={editMode === 1 ? true : false} 
+            onValueChange={(val) => setEditMode(val ? 1 : 0)} 
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={[styles.switchLabel, { color: colors.text }]}>Automatyczny wysoki priorytet dla przeterminowanych</Text>
+          <Switch 
+            value={autoPriority === 1 ? true : false} 
+            onValueChange={(val) => setAutoPriority(val ? 1 : 0)} 
+          />
         </View>
 
         <TouchableOpacity 
@@ -123,7 +167,7 @@ export default function EditListScreen() {
             <Text style={[styles.deleteButtonText, { color: colors.onError }]}>Usuń listę</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -132,6 +176,17 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   formContainer: { padding: 20 },
   label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  switchLabel: {
+    fontSize: 16,
+    flex: 1,
+    paddingRight: 10,
+  },
   colorsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
