@@ -1,5 +1,6 @@
 // app/(tabs)/settings.tsx
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
@@ -112,7 +113,8 @@ export default function SettingsScreen() {
                 <Text style={[styles.profileName, { color: colors.text }]}>Zalogowany użytkownik</Text>
                 <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>Połączono z chmurą</Text>
               </View>
-              <TouchableOpacity style={styles.editProfileButton}>
+              <TouchableOpacity style={styles.editProfileButton}
+              onPress={() => router.push('/profile')}>
                 <Ionicons name="pencil" size={18} color={colors.primary} />
               </TouchableOpacity>
             </View>
@@ -193,11 +195,11 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Informacje</Text>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <SettingRow 
-            icon="information-circle-outline" 
-            title="O aplikacji" 
-            isLast={true}
-            rightElement={<Text style={[styles.valueText, { color: colors.textSecondary }]}>Wersja 1.0.0</Text>}
-          />
+  icon="information-circle-outline" 
+  title="O aplikacji" 
+  isLast={true}
+  rightElement={<Text style={[styles.valueText, { color: colors.textSecondary }]}>Wersja {Constants.expoConfig?.version || '1.0.0'}</Text>}
+/>
         </View>
 
       </ScrollView>
