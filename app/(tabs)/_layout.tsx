@@ -14,7 +14,6 @@ export default function TabLayout() {
         tabBarStyle: { 
           paddingBottom: 5, 
           height: 60, 
-          marginBottom: 50,
           backgroundColor: colors.surface,
           borderTopColor: colors.outlineVariant
         },
@@ -25,19 +24,18 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="shared"
-        options={{
-          title: 'Wspólne',
-          tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="index"
         options={{
           title: 'Moje Listy',
           headerShown: false,
-          // Ten ekran jest główny, upewniamy się, że ikona to odzwierciedla
-          tabBarIcon: ({ color }) => <Ionicons name="list-circle" size={32} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="list-outline" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="shared"
+        options={{
+          title: 'Wspólne',
+          tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
