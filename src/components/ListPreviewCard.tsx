@@ -1,15 +1,14 @@
 // src/components/ListPreviewCard.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getTasksByList, Task } from '../database/repositories';
 import { useAppTheme } from './ThemeProvider';
 
 const { width } = Dimensions.get('window');
-export const CARD_WIDTH = width * 0.82; 
-export const CARD_MARGIN = 10;
+export const CARD_WIDTH = width * 0.45; 
+export const CARD_MARGIN = 8;
 export const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN * 2;
 
 interface ListPreviewCardProps {
@@ -30,65 +29,53 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
   const cardColor = list.primary_color && list.primary_color !== '#ffffff' 
     ? list.primary_color 
     : colors.surface;
-    
-  const gradientColors = [
-    cardColor,
-    theme === 'dark' ? '#121212' : '#ffffff'
-  ];
+
+  // Assuming an arbitrary icon logic, default to brief-case
+  const defaultIcon = list.name.toLowerCase().includes('zakup') ? 'cart-outline' : 'briefcase-outline';
+
+  const completedCount = tasks.filter(t => t.is_completed).length;
+  const totalCount = tasks.length;
+  const progress = totalCount > 0 ? completedCount / totalCount : 0;
 
   return (
-    // Zmieniono: Cała karta jest teraz klikalna
     <TouchableOpacity 
       activeOpacity={0.9} 
       onPress={onPress} 
       style={[
         styles.cardContainer, 
         { 
+          backgroundColor: cardColor,
           shadowColor: theme === 'dark' ? '#000' : '#000' 
         }
       ]}
     >
-      <LinearGradient
-        colors={gradientColors as [string, string]}
-        style={styles.gradientContainer}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      >
-        {/* Nagłówek bez zmiany struktury, ale usunięto starą funkcję Touchable */}
-        <View style={[styles.header, { borderBottomColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
-          <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>{list.name}</Text>
-          <Ionicons name="expand-outline" size={24} color={colors.textSecondary} />
+      <View style={styles.innerContainer}>
+        <View style={styles.iconContainer}>
+          <Ionicons name={defaultIcon} size={28} color={colors.onPrimary} />
         </View>
 
-        <ScrollView 
-          style={styles.scrollArea} 
-          nestedScrollEnabled={true}
-          showsVerticalScrollIndicator={false}
-        >
-          {tasks.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Brak zadań. Kliknij, aby dodać.</Text>
-          ) : (
-            tasks.map((task) => (
-              <View key={task.id} style={styles.taskRow}>
-                <Ionicons 
-                  name={task.is_completed ? "checkmark-circle" : "ellipse-outline"} 
-                  size={20} 
-                  color={task.is_completed ? colors.success : colors.textSecondary} 
-                />
-                <Text 
-                  style={[
-                    styles.taskTitle, 
-                    { color: colors.text }, 
-                    task.is_completed ? [styles.completedTask, { color: colors.textSecondary }] : undefined
-                  ]}
-                >
-                  {task.title}
-                </Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </LinearGradient>
+        <View style={styles.textContainer}>
+          <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={2}>
+            {list.name}
+          </Text>
+          <Text style={[styles.taskCount, { color: colors.textSecondary }]}>
+            {totalCount} zadań
+          </Text>
+        </View>
+
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBarBackground, { backgroundColor: colors.surfaceVariant }]} />
+          <View 
+            style={[
+              styles.progressBarFill, 
+              { 
+                backgroundColor: colors.primary, 
+                width: `${progress * 100}%` 
+              }
+            ]} 
+          />
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -97,51 +84,51 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: CARD_WIDTH,
     marginHorizontal: CARD_MARGIN,
-    borderRadius: 20,
-    shadowOpacity: 0.08,
+    borderRadius: 16,
+    shadowOpacity: 0.05,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-    flex: 1, 
-    justifyContent: 'space-between',
-    overflow: 'hidden'
+    elevation: 3,
+    height: 220,
   },
-  gradientContainer: {
+  innerContainer: {
     flex: 1,
     padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#007abc', // TBD, color matching design
+    justifyContent: 'center',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingBottom: 12,
-    marginBottom: 12,
+    marginBottom: 24,
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   listTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 6,
   },
-  scrollArea: {
-    flex: 1,
+  taskCount: {
+    fontSize: 14,
   },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontStyle: 'italic',
+  progressBarContainer: {
+    height: 6,
+    borderRadius: 3,
+    marginTop: 16,
+    overflow: 'hidden',
   },
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  progressBarBackground: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 3,
   },
-  taskTitle: {
-    fontSize: 15,
-    marginLeft: 10,
-    flex: 1,
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
   },
-  completedTask: {
-    textDecorationLine: 'line-through',
-  }
 });

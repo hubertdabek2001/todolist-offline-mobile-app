@@ -2,12 +2,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Dimensions, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { createList, getMyLists } from '../../src/database/repositories';
-
-const { width } = Dimensions.get('window');
 
 interface TodoList {
   id: string;
@@ -20,7 +19,7 @@ export default function MyListsScreen() {
   const [lists, setLists] = useState<TodoList[]>([]);
   const [newListName, setNewListName] = useState('');
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colors, theme } = useAppTheme();
 
   const loadLists = async () => {
     try {
@@ -42,9 +41,27 @@ export default function MyListsScreen() {
     await loadLists(); 
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       
+      {/* HEADER */}
+      <View style={[styles.headerContainer, { borderBottomColor: colors.outlineVariant }]}>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="checkmark-circle-outline" size={28} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Zadania</Text>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.titleContainer}>
+        <Text style={[styles.mainTitle, { color: colors.text }]}>Moje Listy</Text>
+        <Text style={[styles.subTitle, { color: colors.textSecondary }]}>Zarządzaj swoimi zadaniami efektywnie.</Text>
+      </View>
+
       {/* KARUZELA LIST */}
       <View style={styles.carouselContainer}>
         {lists.length === 0 ? (
@@ -56,14 +73,12 @@ export default function MyListsScreen() {
             keyExtractor={(item) => item.id}
             showsHorizontalScrollIndicator={false}
             
-            // 1. Zmiana: Precyzyjne zatrzaskiwanie na środku bez błędu Androida
-            snapToOffsets={lists.map((_, i) => i * SNAP_INTERVAL)}
-            
-            // 2. Zmiana: Blokuje przeskakiwanie kilku list na raz przy mocnym machnięciu palcem
+            snapToAlignment="start"
+            snapToInterval={SNAP_INTERVAL}
             disableIntervalMomentum={true} 
-            
             decelerationRate="fast"
-            contentContainerStyle={{ paddingHorizontal: (width - SNAP_INTERVAL) / 2 }}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            ItemSeparatorComponent={() => <View style={{ width: 0 }} />}
             
             renderItem={({ item }) => (
               <ListPreviewCard 
@@ -78,19 +93,41 @@ export default function MyListsScreen() {
         )}
       </View>
 
-      {/* PASEK DODAWANIA */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
-          placeholder="Nazwa nowej listy..."
-          placeholderTextColor={colors.textSecondary}
-          value={newListName}
-          onChangeText={setNewListName}
-          onSubmitEditing={handleAddList}
-        />
-        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={handleAddList}>
-          <Ionicons name="add" size={24} color={colors.onPrimary} />
+      {/* PILNE ZADANIA (MOCK) */}
+      <View style={styles.urgentCardContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.urgentCard, 
+            { backgroundColor: colors.surface, shadowColor: theme === 'dark' ? '#000' : '#000' }
+          ]}
+          activeOpacity={0.8}
+        >
+          <View style={styles.urgentIconContainer}>
+            <Ionicons name="alert" size={20} color="#e53935" />
+          </View>
+          <View style={styles.urgentTextContainer}>
+            <Text style={[styles.urgentTitle, { color: colors.text }]}>Pilne Zadania</Text>
+            <Text style={[styles.urgentSubtitle, { color: colors.textSecondary }]}>3 na dzisiaj</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
+      </View>
+
+      {/* PASEK DODAWANIA - FLOATING */}
+      <View style={styles.floatingInputWrapper}>
+        <View style={[styles.floatingInputContainer, { backgroundColor: colors.surface }]}>
+          <TextInput
+            style={[styles.floatingInput, { color: colors.text }]}
+            placeholder="Dodaj nową listę..."
+            placeholderTextColor={colors.textSecondary}
+            value={newListName}
+            onChangeText={setNewListName}
+            onSubmitEditing={handleAddList}
+          />
+          <TouchableOpacity style={[styles.floatingAddButton, { backgroundColor: colors.primary }]} onPress={handleAddList}>
+            <Ionicons name="add" size={24} color={colors.onPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -100,9 +137,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    backgroundColor: '#ffffff',
+  },
+  headerIcon: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  titleContainer: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  mainTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  subTitle: {
+    fontSize: 15,
+  },
   carouselContainer: {
     flex: 1, // Zajmuje całą dostępną przestrzeń nad paskiem dodawania
-    paddingVertical: 20, // Odsunięcie od góry i dołu
+    paddingVertical: 10, // Odsunięcie od góry i dołu
   },
   emptyGlobalText: {
     textAlign: 'center',
@@ -110,25 +176,68 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 20,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: 1,
-    alignItems: 'center',
+  urgentCardContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 100, // Zostawia miejsce na floating input
   },
-  input: {
+  urgentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  urgentIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffebee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  urgentTextContainer: {
+    flex: 1,
+  },
+  urgentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  urgentSubtitle: {
+    fontSize: 14,
+  },
+  floatingInputWrapper: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+  },
+  floatingInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 30,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  floatingInput: {
     flex: 1,
     height: 48,
-    borderRadius: 24,
     paddingHorizontal: 20,
     fontSize: 16,
-    marginRight: 12,
   },
-  addButton: {
+  floatingAddButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 8,
   },
 });

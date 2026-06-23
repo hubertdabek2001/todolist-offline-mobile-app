@@ -35,6 +35,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Moje Listy',
+          headerShown: false,
           // Ten ekran jest główny, upewniamy się, że ikona to odzwierciedla
           tabBarIcon: ({ color }) => <Ionicons name="list-circle" size={32} color={color} />,
         }}

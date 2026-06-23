@@ -1,100 +1,243 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+// app/(tabs)/index.tsx
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ListPreviewCard, { SNAP_INTERVAL } from './../src/components/ListPreviewCard';
+import { useAppTheme } from './../src/components/ThemeProvider';
+import { createList, getMyLists } from './../src/database/repositories';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
+interface TodoList {
+  id: string;
+  name: string;
+  is_archived: number;
+  primary_color: string;
 }
 
-export default function HomeScreen() {
+export default function MyListsScreen() {
+  const [lists, setLists] = useState<TodoList[]>([]);
+  const [newListName, setNewListName] = useState('');
+  const router = useRouter();
+  const { colors, theme } = useAppTheme();
+
+  const loadLists = async () => {
+    try {
+      const data = await getMyLists();
+      setLists(data as TodoList[]);
+    } catch (error) {
+      console.error("Błąd pobierania list:", error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => { loadLists(); }, [])
+  );
+
+  const handleAddList = async () => {
+    if (newListName.trim() === '') return;
+    await createList(newListName.trim());
+    setNewListName('');
+    await loadLists(); 
+  };
+
   const insets = useSafeAreaInsets();
-  
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={[styles.safeArea, { paddingBottom: insets.bottom + Spacing.three }]}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      
+      {/* HEADER */}
+      <View style={[styles.headerContainer, { borderBottomColor: colors.outlineVariant }]}>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="checkmark-circle-outline" size={28} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Zadania</Text>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <View style={styles.titleContainer}>
+        <Text style={[styles.mainTitle, { color: colors.text }]}>Moje Listy</Text>
+        <Text style={[styles.subTitle, { color: colors.textSecondary }]}>Zarządzaj swoimi zadaniami efektywnie.</Text>
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+      {/* KARUZELA LIST */}
+      <View style={styles.carouselContainer}>
+        {lists.length === 0 ? (
+          <Text style={[styles.emptyGlobalText, { color: colors.textSecondary }]}>Brak list. Utwórz pierwszą listę poniżej!</Text>
+        ) : (
+          <FlatList
+            horizontal
+            data={lists}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            
+            snapToAlignment="start"
+            snapToInterval={SNAP_INTERVAL}
+            disableIntervalMomentum={true} 
+            decelerationRate="fast"
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            ItemSeparatorComponent={() => <View style={{ width: 0 }} />}
+            
+            renderItem={({ item }) => (
+              <ListPreviewCard 
+                list={item} 
+                onPress={() => router.push({
+                  pathname: `/list/${item.id}`,
+                  params: { name: item.name }
+                } as any)}
+              />
+            )}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        )}
+      </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ThemedView>
+      {/* PILNE ZADANIA (MOCK) */}
+      <View style={styles.urgentCardContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.urgentCard, 
+            { backgroundColor: colors.surface, shadowColor: theme === 'dark' ? '#000' : '#000' }
+          ]}
+          activeOpacity={0.8}
+        >
+          <View style={styles.urgentIconContainer}>
+            <Ionicons name="alert" size={20} color="#e53935" />
+          </View>
+          <View style={styles.urgentTextContainer}>
+            <Text style={[styles.urgentTitle, { color: colors.text }]}>Pilne Zadania</Text>
+            <Text style={[styles.urgentSubtitle, { color: colors.textSecondary }]}>3 na dzisiaj</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* PASEK DODAWANIA - FLOATING */}
+      <View style={styles.floatingInputWrapper}>
+        <View style={[styles.floatingInputContainer, { backgroundColor: colors.surface }]}>
+          <TextInput
+            style={[styles.floatingInput, { color: colors.text }]}
+            placeholder="Dodaj nową listę..."
+            placeholderTextColor={colors.textSecondary}
+            value={newListName}
+            onChangeText={setNewListName}
+            onSubmitEditing={handleAddList}
+          />
+          <TouchableOpacity style={[styles.floatingAddButton, { backgroundColor: colors.primary }]} onPress={handleAddList}>
+            <Ionicons name="add" size={24} color={colors.onPrimary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  headerContainer: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    backgroundColor: '#ffffff',
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  headerIcon: {
+    padding: 4,
   },
-  title: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  titleContainer: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  mainTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  subTitle: {
+    fontSize: 15,
+  },
+  carouselContainer: {
+    flex: 1, // Zajmuje całą dostępną przestrzeń nad paskiem dodawania
+    paddingVertical: 10, // Odsunięcie od góry i dołu
+  },
+  emptyGlobalText: {
     textAlign: 'center',
+    marginTop: 60,
+    fontSize: 16,
+    paddingHorizontal: 20,
   },
-  code: {
-    textTransform: 'uppercase',
+  urgentCardContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 100, // Zostawia miejsce na floating input
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  urgentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  urgentIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffebee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  urgentTextContainer: {
+    flex: 1,
+  },
+  urgentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  urgentSubtitle: {
+    fontSize: 14,
+  },
+  floatingInputWrapper: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+  },
+  floatingInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 30,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  floatingInput: {
+    flex: 1,
+    height: 48,
+    paddingHorizontal: 20,
+    fontSize: 16,
+  },
+  floatingAddButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 });
