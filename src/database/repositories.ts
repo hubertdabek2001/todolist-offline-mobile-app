@@ -15,6 +15,8 @@ export interface Task {
   description: string;
   is_completed: number;
   spent_time_seconds: number;
+  priority: string;
+  due_date: string | null;
 }
 
 export interface SubTask {
@@ -24,6 +26,20 @@ export interface SubTask {
   title: string;
   is_completed: number;
   spent_time_seconds: number;
+  priority: string;
+  due_date: string | null;
+}
+
+export interface TodoList {
+  id: string;
+  name: string;
+  is_archived: number;
+  is_shared: number;
+  primary_color: string;
+  priority: string;
+  due_date: string | null;
+  auto_priority: number;
+  edit_mode: number;
 }
 
 export async function createList(name: string) {
@@ -103,8 +119,8 @@ export async function toggleSubTaskStatus(subTaskId: string, currentStatus: numb
 export async function getListById(id: string) {
   const safeId = Array.isArray(id) ? id[0] : id;
   const db = getDb();
-  return await db.getFirstAsync<{ id: string; name: string; primary_color: string }>(
-    'SELECT id, name, primary_color FROM todo_lists WHERE id = ?', 
+  return await db.getFirstAsync<{ id: string; name: string; primary_color: string; priority: string; due_date: string | null; auto_priority: number; edit_mode: number }>(
+    'SELECT id, name, primary_color, priority, due_date, auto_priority, edit_mode FROM todo_lists WHERE id = ?',
     safe(safeId)
   );
 }
@@ -115,10 +131,48 @@ export async function updateListName(id: string, newName: string) {
   await db.runAsync('UPDATE todo_lists SET name = ? WHERE id = ?', safe(newName), safe(safeId));
 }
 
-export async function updateListDetails(id: string, newName: string, newColor: string) {
+export async function updateListDetails(id: string, newName: string, newColor: string, editMode: number, autoPriority: number, priority: string, dueDate: string | null) {
   const safeId = Array.isArray(id) ? id[0] : id;
   const db = getDb();
-  await db.runAsync('UPDATE todo_lists SET name = ?, primary_color = ? WHERE id = ?', safe(newName), safe(newColor), safe(safeId));
+  await db.runAsync('UPDATE todo_lists SET name = ?, primary_color = ?, edit_mode = ?, auto_priority = ?, priority = ?, due_date = ? WHERE id = ?', safe(newName), safe(newColor), safe(editMode), safe(autoPriority), safe(priority), safe(dueDate), safe(safeId));
+}
+
+export async function updateTaskDetails(taskId: string, newTitle: string, newPriority: string, newDueDate: string | null) {
+  const db = getDb();
+  await db.runAsync('UPDATE tasks SET title = ?, priority = ?, due_date = ? WHERE id = ?', safe(newTitle), safe(newPriority), safe(newDueDate), safe(taskId));
+}
+
+export async function updateSubTaskDetails(subTaskId: string, newTitle: string, newPriority: string, newDueDate: string | null) {
+  const db = getDb();
+  await db.runAsync('UPDATE sub_tasks SET title = ?, priority = ?, due_date = ? WHERE id = ?', safe(newTitle), safe(newPriority), safe(newDueDate), safe(subTaskId));
+}
+
+export async function evaluateAutoPriority(listId: string) {
+  const safeId = Array.isArray(listId) ? listId[0] : listId;
+  const db = getDb();
+
+  const list = await db.getFirstAsync<{ id: string; auto_priority: number; due_date: string | null }>('SELECT id, auto_priority, due_date FROM todo_lists WHERE id = ?', safe(safeId));
+
+  if (!list || list.auto_priority !== 1) return;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Update List Priority
+  if (list.due_date && list.due_date <= todayStr) {
+      await db.runAsync("UPDATE todo_lists SET priority = 'high' WHERE id = ?", safe(safeId));
+  }
+
+  // Update Tasks Priority
+  await db.runAsync("UPDATE tasks SET priority = 'high' WHERE todo_list_id = ? AND due_date IS NOT NULL AND due_date <= ?", safe(safeId), todayStr);
+
+  // Update SubTasks Priority
+  await db.runAsync(`
+    UPDATE sub_tasks
+    SET priority = 'high'
+    WHERE due_date IS NOT NULL
+      AND due_date <= ?
+      AND task_id IN (SELECT id FROM tasks WHERE todo_list_id = ?)
+  `, todayStr, safe(safeId));
 }
 
 export async function deleteList(id: string) {
