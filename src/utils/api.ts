@@ -34,4 +34,33 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     console.error("[AUTH] Błąd podczas odświeżania tokena:", e);
     return null;
   }
+
+  
+};
+
+export const fetchActivityLogs = async (listId: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return null;
+
+  try {
+    let response = await fetch(`${API_URL}/activity/${listId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return null;
+      response = await fetch(`${API_URL}/activity/${listId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    if (response.ok) {
+      return await response.json();
+    }
+    return [];
+  } catch (e) {
+    console.error("[API] Błąd pobierania aktywności:", e);
+    return [];
+  }
 };

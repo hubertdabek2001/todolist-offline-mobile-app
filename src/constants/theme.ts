@@ -163,3 +163,33 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+export const AccentColors = {
+  blue: {
+    light: { primary: '#2f95dc', secondary: '#545f73', surfaceTint: '#00639a' },
+    dark: { primary: '#3b82f6', secondary: '#10b981', surfaceTint: '#adc6ff' },
+    name: 'Niebieski'
+  },
+  green: {
+    light: { primary: '#10b981', secondary: '#047857', surfaceTint: '#059669' },
+    dark: { primary: '#34d399', secondary: '#059669', surfaceTint: '#6ee7b7' },
+    name: 'Zielony'
+  },
+  purple: {
+    light: { primary: '#8b5cf6', secondary: '#6d28d9', surfaceTint: '#7c3aed' },
+    dark: { primary: '#a78bfa', secondary: '#7c3aed', surfaceTint: '#c4b5fd' },
+    name: 'Fioletowy'
+  },
+  rose: {
+    light: { primary: '#f43f5e', secondary: '#be123c', surfaceTint: '#e11d48' },
+    dark: { primary: '#fb7185', secondary: '#e11d48', surfaceTint: '#fda4af' },
+    name: 'Różowy'
+  },
+  orange: {
+    light: { primary: '#f97316', secondary: '#c2410c', surfaceTint: '#ea580c' },
+    dark: { primary: '#fb923c', secondary: '#ea580c', surfaceTint: '#fdba74' },
+    name: 'Pomarańczowy'
+  }
+};
+
+export type AccentTheme = keyof typeof AccentColors;

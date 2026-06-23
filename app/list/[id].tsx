@@ -6,7 +6,9 @@ import {
     Alert,
     FlatList,
     KeyboardAvoidingView,
+    Modal,
     Platform,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -28,6 +30,7 @@ import {
     toggleTaskStatus
 } from '../../src/database/repositories';
 import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
+import { fetchActivityLogs } from '../../src/utils/api';
 
 export default function ListDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
@@ -50,10 +53,13 @@ export default function ListDetailScreen() {
   const [editingSubTaskDueDate, setEditingSubTaskDueDate] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false); 
-  const [isInputVisible, setIsInputVisible] = useState(false); // NOWY STAN
+  const [isInputVisible, setIsInputVisible] = useState(false);
   const [editMode, setEditMode] = useState(0);
 
+  // --- STANY WEBSOCKET I AKTYWNOŚCI ---
   const { latestActivity, isConnected } = useTodoWebSocket(id as string);
+  const [isActivityFeedVisible, setIsActivityFeedVisible] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
 
   const router = useRouter();
 
@@ -71,35 +77,42 @@ export default function ListDetailScreen() {
     setSubTasks(fetchedSubTasks);
   }, [id]);
 
-  // W expo-router zamiast useEffect z setState rekomendowany jest useFocusEffect lub uruchomienie asynchroniczne nie-bezpośrednie,
-  // Ale dla prostoty wyłączamy tutaj regułę dla tego konkretnego bloku (ponieważ getTasksByList itd. to zewnętrzne API bazy, z którymi się synchronizujemy, więc nie ma tu stricte anti-patternu wg dokumentacji React o zewnętrznych store'ach - choć oficjalny jest useSyncExternalStore).
+  const loadActivityHistory = async () => {
+    if (id) {
+      const logs = await fetchActivityLogs(id as string);
+      if (logs) setActivityLogs(logs);
+    }
+  };
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
 
+  // JEDEN POPRAWNY USE_EFFECT DLA WEBSOCKETA
   useEffect(() => {
     if (latestActivity) {
-      // Gdy przychodzi zdarzenie z backendu, wyświetlamy powiadomienie
-      let actionWord = 'zmodyfikował(a)';
-      if (latestActivity.actionType === 'CREATE') actionWord = 'dodał(a)';
-      if (latestActivity.actionType === 'COMPLETE') actionWord = 'zakończył(a)';
-      if (latestActivity.actionType === 'DELETE') actionWord = 'usunął(a)';
-
-      let entityWord = 'obiekt';
-      if (latestActivity.entityType === 'TASK') entityWord = 'zadanie';
-      if (latestActivity.entityType === 'SUBTASK') entityWord = 'podzadanie';
-
-      // Wysunięcie Alertu / Toasta
-      Alert.alert(
-        "Aktualizacja na żywo!", 
-        `Ktoś ${actionWord} ${entityWord}: "${latestActivity.entityName}"\n\nAby zobaczyć zmiany, zsynchronizuj aplikację.`
-      );
+      // 1. Dodajemy do osi czasu na żywo (bez odpytywania serwera)
+      const newLog = {
+        id: latestActivity.id,
+        actionType: latestActivity.actionType,
+        entityType: latestActivity.entityType,
+        entityName: latestActivity.entityName,
+        timestamp: new Date().toISOString(),
+        authorName: "Ktoś" // Zostanie zaktualizowane przy pull'u z bazy
+      };
+      
+      setActivityLogs(prev => [newLog, ...prev]);
+      
+      // 2. Jeśli panel jest zamknięty, informujemy użytkownika małym powiadomieniem
+      if (!isActivityFeedVisible) {
+         Alert.alert("Aktualizacja", `Pojawiła się nowa aktywność ("${latestActivity.entityName}"). Sprawdź oś czasu!`);
+      }
 
       // TODO w Fazie 5: Tutaj wywołamy funkcję PULL, która automatycznie
       // dociągnie to nowe zadanie z serwera i zaktualizuje lokalne SQLite!
     }
-  }, [latestActivity]);
+  }, [latestActivity]); // Usunięto drugi useEffect
 
   const handleAddItem = async () => {
     if (inputText.trim() === '' || !id || isSubmitting) return;
@@ -366,36 +379,31 @@ export default function ListDetailScreen() {
     <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{ 
-          title: name || 'Szczegóły listy', 
-          headerShown: true,
+          title: name || 'Lista',
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TouchableOpacity 
-                onPress={() => router.push(`/list/share/${id}`)} 
-                style={{ marginRight: 15, padding: 5 }}
-              >
-                <Ionicons name="qr-code-outline" size={26} color={colors.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+              <TouchableOpacity onPress={() => {
+                setIsActivityFeedVisible(true);
+                loadActivityHistory();
+              }}>
+                <Ionicons name="notifications-outline" size={24} color={colors.text} />
               </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => router.push(`/list/edit/${id}`)} 
-                style={{ marginRight: 5, padding: 5 }}
-              >
-                <Ionicons name="settings-outline" size={26} color={colors.textSecondary} />
+              
+              <TouchableOpacity onPress={() => router.push(`/list/share/${id}`)}>
+                <Ionicons name="qr-code-outline" size={24} color={colors.text} />
               </TouchableOpacity>
-              <Ionicons name="wifi" size={18} color={isConnected ? colors.success : colors.textSecondary} style={{ marginRight: 10 }} />
             </View>
           )
         }} 
       />
-
+    
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'android' ? 'padding' : 'height'} 
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === 'android' ? 90 : 0} 
       >
-        {/* Kontener listy rozpychający się na ekranie */}
         <View style={{ flex: 1 }}>
           <FlatList
             data={tasks}
@@ -408,7 +416,6 @@ export default function ListDetailScreen() {
           />
         </View>
 
-        {/* Dolny kontener w naturalnym układzie (bez position absolute) */}
         <View style={[styles.floatingInputWrapper, { paddingBottom: Math.max(24, insets.bottom + 10) }]}>
           {!isInputVisible && !selectedTaskForSubtask ? (
             <TouchableOpacity 
@@ -426,7 +433,6 @@ export default function ListDetailScreen() {
                   </Text>
                   <TouchableOpacity onPress={() => {
                     setSelectedTaskForSubtask(null);
-                    // Jeśli chcemy również schować klawiaturę: setIsInputVisible(false);
                   }}>
                     <Ionicons name="close-circle" size={18} color={colors.error} />
                   </TouchableOpacity>
@@ -441,7 +447,7 @@ export default function ListDetailScreen() {
                   value={inputText}
                   onChangeText={setInputText}
                   onSubmitEditing={handleAddItem}
-                  autoFocus={true} // Automatycznie wywołuje klawiaturę
+                  autoFocus={true}
                 />
                 <TouchableOpacity 
                   style={[styles.floatingCloseButton, { backgroundColor: colors.surfaceVariant, marginRight: 8 }]} 
@@ -461,6 +467,84 @@ export default function ListDetailScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={isActivityFeedVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsActivityFeedVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setIsActivityFeedVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ 
+              backgroundColor: colors.surface, 
+              borderTopLeftRadius: 28, 
+              borderTopRightRadius: 28, 
+              height: '75%', 
+              paddingTop: 16 
+            }}
+          >
+            <View style={{ width: 40, height: 5, backgroundColor: colors.outlineVariant, borderRadius: 3, alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, textAlign: 'center', marginBottom: 20 }}>
+              Aktywność
+            </Text>
+
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+              {activityLogs.length === 0 ? (
+                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 40 }}>Brak aktywności na tej liście.</Text>
+              ) : (
+                activityLogs.map((log, index) => {
+                  let actionText = '';
+                  let iconName: any = 'ellipse-outline';
+                  let iconColor = colors.primary;
+
+                  if (log.actionType === 'CREATE') { actionText = 'dodał(a)'; iconName = 'add-circle'; iconColor = colors.success; }
+                  else if (log.actionType === 'UPDATE') { actionText = 'zmodyfikował(a)'; iconName = 'pencil'; iconColor = colors.warning; }
+                  else if (log.actionType === 'DELETE') { actionText = 'usunął(a)'; iconName = 'trash'; iconColor = colors.error; }
+                  else if (log.actionType === 'COMPLETE') { actionText = 'ukończył(a)'; iconName = 'checkmark-circle'; iconColor = colors.primary; }
+
+                  let entityText = '';
+                  if (log.entityType === 'LIST') entityText = 'listę';
+                  else if (log.entityType === 'TASK') entityText = 'zadanie';
+                  else if (log.entityType === 'SUBTASK') entityText = 'podzadanie';
+
+                  const dateObj = new Date(log.timestamp);
+                  const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const dateString = dateObj.toLocaleDateString();
+
+                  return (
+                    <View key={log.id} style={{ flexDirection: 'row', marginBottom: 20 }}>
+                      <View style={{ alignItems: 'center', marginRight: 16 }}>
+                        <Ionicons name={iconName} size={24} color={iconColor} />
+                        {index !== activityLogs.length - 1 && (
+                          <View style={{ width: 2, flex: 1, backgroundColor: colors.surfaceVariant, marginTop: 4 }} />
+                        )}
+                      </View>
+
+                      <View style={{ flex: 1, paddingBottom: 8 }}>
+                        <Text style={{ color: colors.text, fontSize: 15 }}>
+                          <Text style={{ fontWeight: 'bold' }}>{log.authorName}</Text> {actionText} {entityText}:
+                        </Text>
+                        <Text style={{ color: colors.text, fontSize: 16, fontStyle: 'italic', marginVertical: 4 }}>
+                          "{log.entityName}"
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                          {dateString} o {timeString}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -513,7 +597,6 @@ const styles = StyleSheet.create({
   actionIcon: { padding: 6, marginLeft: 4 },
   emptyText: { textAlign: 'center', marginTop: 40 },
   
-  // --- Style dla FAB i paska wejściowego ---
   floatingInputWrapper: {
     paddingHorizontal: 16,
     paddingTop: 10,
