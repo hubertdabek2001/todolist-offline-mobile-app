@@ -27,6 +27,7 @@ import {
     toggleSubTaskStatus,
     toggleTaskStatus
 } from '../../src/database/repositories';
+import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
 
 export default function ListDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
@@ -51,6 +52,9 @@ export default function ListDetailScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false); 
   const [isInputVisible, setIsInputVisible] = useState(false); // NOWY STAN
   const [editMode, setEditMode] = useState(0);
+
+  const { latestActivity, isConnected } = useTodoWebSocket(id as string);
+
   const router = useRouter();
 
   const loadData = useCallback(async () => {
@@ -73,6 +77,29 @@ export default function ListDetailScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (latestActivity) {
+      // Gdy przychodzi zdarzenie z backendu, wyświetlamy powiadomienie
+      let actionWord = 'zmodyfikował(a)';
+      if (latestActivity.actionType === 'CREATE') actionWord = 'dodał(a)';
+      if (latestActivity.actionType === 'COMPLETE') actionWord = 'zakończył(a)';
+      if (latestActivity.actionType === 'DELETE') actionWord = 'usunął(a)';
+
+      let entityWord = 'obiekt';
+      if (latestActivity.entityType === 'TASK') entityWord = 'zadanie';
+      if (latestActivity.entityType === 'SUBTASK') entityWord = 'podzadanie';
+
+      // Wysunięcie Alertu / Toasta
+      Alert.alert(
+        "Aktualizacja na żywo!", 
+        `Ktoś ${actionWord} ${entityWord}: "${latestActivity.entityName}"\n\nAby zobaczyć zmiany, zsynchronizuj aplikację.`
+      );
+
+      // TODO w Fazie 5: Tutaj wywołamy funkcję PULL, która automatycznie
+      // dociągnie to nowe zadanie z serwera i zaktualizuje lokalne SQLite!
+    }
+  }, [latestActivity]);
 
   const handleAddItem = async () => {
     if (inputText.trim() === '' || !id || isSubmitting) return;
@@ -357,6 +384,7 @@ export default function ListDetailScreen() {
               >
                 <Ionicons name="settings-outline" size={26} color={colors.textSecondary} />
               </TouchableOpacity>
+              <Ionicons name="wifi" size={18} color={isConnected ? colors.success : colors.textSecondary} style={{ marginRight: 10 }} />
             </View>
           )
         }} 

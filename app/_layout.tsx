@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import 'text-encoding';
 import { ThemeProvider } from '../src/components/ThemeProvider';
 import { initDatabase } from '../src/database/database';
 

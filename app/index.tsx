@@ -14,82 +14,47 @@ export default function EntryScreen() {
   
   const [step, setStep] = useState<'LOADING' | 'WELCOME' | 'LOGIN' | 'VERIFY' | 'SETUP'>('LOADING');
   const [email, setEmail] = useState('');
+  
+  // Trzymamy oba tokeny w pamięci na czas rejestracji
   const [jwtToken, setJwtToken] = useState('');
+  const [refreshTokenState, setRefreshTokenState] = useState('');
 
   useEffect(() => {
     checkLoginStatus();
   }, []);
 
   const checkLoginStatus = async () => {
-    // 🛠️ NARZĘDZIE DEWELOPERSKIE: 
-    // Odkomentuj poniższą linijkę, zapisz plik, a aplikacja usunie Twój token i pokaże WelcomeScreen.
-    // Jak już go zobaczysz, zakomentuj ją z powrotem, aby logowanie znów działało!
-    
-    // await SecureStore.deleteItemAsync('userToken'); 
-
-    const token = await SecureStore.getItemAsync('userToken');
+    const token = await SecureStore.getItemAsync('accessToken');
     if (token) {
-      // Użytkownik jest zalogowany - wrzucamy go od razu do nawigacji (tabs)
       router.replace('/(tabs)');
     } else {
       setStep('WELCOME');
     }
   };
 
-  const handleLoginSuccess = async (token: string, requiresSetup: boolean) => {
+  const handleLoginSuccess = async (accessToken: string, refreshToken: string, requiresSetup: boolean) => {
     if (requiresSetup) {
-      setJwtToken(token);
+      setJwtToken(accessToken);
+      setRefreshTokenState(refreshToken);
       setStep('SETUP');
     } else {
-      await SecureStore.setItemAsync('userToken', token);
+      await SecureStore.setItemAsync('accessToken', accessToken);
+      await SecureStore.setItemAsync('refreshToken', refreshToken);
       router.replace('/(tabs)');
     }
   };
 
   const handleSetupComplete = async () => {
-    await SecureStore.setItemAsync('userToken', jwtToken);
+    await SecureStore.setItemAsync('accessToken', jwtToken);
+    await SecureStore.setItemAsync('refreshToken', refreshTokenState);
     router.replace('/(tabs)');
   };
 
-  if (step === 'LOADING') {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#006196" />
-      </View>
-    );
-  }
-
-  if (step === 'WELCOME') {
-    return (
-      <WelcomeScreen 
-        onNavigate={() => setStep('LOGIN')} 
-        onSkipAuth={() => router.replace('/(tabs)')} 
-      />
-    );
-  }
-
-  if (step === 'LOGIN') {
-    return (
-      <LoginScreen 
-        onBack={() => setStep('WELCOME')} 
-        onSubmitEmail={(e) => { setEmail(e); setStep('VERIFY'); }} 
-      />
-    );
-  }
-
-  if (step === 'VERIFY') {
-    return (
-      <VerifyScreen 
-        email={email} 
-        onBack={() => setStep('LOGIN')} 
-        onSuccess={handleLoginSuccess} 
-      />
-    );
-  }
-
-  if (step === 'SETUP') {
-    return <SetupProfileScreen token={jwtToken} onSuccess={handleSetupComplete} />;
-  }
+  if (step === 'LOADING') return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#006196" /></View>;
+  if (step === 'WELCOME') return <WelcomeScreen onNavigate={() => setStep('LOGIN')} onSkipAuth={() => router.replace('/(tabs)')} />;
+  if (step === 'LOGIN') return <LoginScreen onBack={() => setStep('WELCOME')} onSubmitEmail={(e) => { setEmail(e); setStep('VERIFY'); }} />;
+  if (step === 'VERIFY') return <VerifyScreen email={email} onBack={() => setStep('LOGIN')} onSuccess={handleLoginSuccess} />;
+  if (step === 'SETUP') return <SetupProfileScreen token={jwtToken} onSuccess={handleSetupComplete} />;
 
   return null;
 }

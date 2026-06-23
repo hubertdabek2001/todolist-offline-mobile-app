@@ -53,7 +53,8 @@ export default function SettingsScreen() {
           text: "Wyloguj", 
           style: "destructive", 
           onPress: async () => {
-            await SecureStore.deleteItemAsync('userToken');
+            await SecureStore.deleteItemAsync('accessToken');
+            await SecureStore.deleteItemAsync('refreshToken');
             setIsLoggedIn(false);
           } 
         }
@@ -63,7 +64,8 @@ export default function SettingsScreen() {
 
   const handleLogin = async () => {
     // Przenosi użytkownika do ekranu początkowego, by przeszedł proces logowania OTP
-    await SecureStore.deleteItemAsync('userToken');
+    await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('refreshToken');
     router.replace('/'); 
   };
 

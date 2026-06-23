@@ -6,7 +6,7 @@ import { API_URL } from '../utils/api';
 export async function performSync() {
   try {
     // 1. Sprawdzamy, czy użytkownik jest zalogowany
-    const token = await SecureStore.getItemAsync('userToken');
+    let token = await SecureStore.getItemAsync('accessToken');
     if (!token) {
       console.log("[SYNC] Przerwano: Użytkownik działa w trybie Offline.");
       return; 
@@ -55,14 +55,27 @@ export async function performSync() {
     };
 
     // 5. Wysyłka do Huba backendowego
-    const response = await fetch(`${API_URL}/sync/push`, {
+    let response = await fetch(`${API_URL}/sync/push`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(payload)
     });
+
+    // Jeśli serwer wyrzucił nas z powodu starego tokenu
+    if (response.status === 401) {
+      console.log("[SYNC] Access Token wygasł. Odświeżam...");
+      const newToken = await refreshAccessToken(); // zaimportuj tę funkcję z api.ts!
+      if (newToken) {
+         response = await fetch(`${API_URL}/sync/push`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${newToken}` },
+            body: JSON.stringify(payload)
+         });
+      } else {
+         console.log("[SYNC] Przerwano: Wylogowano (brak ważnego odświeżania).");
+         return;
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

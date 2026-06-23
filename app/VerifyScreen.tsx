@@ -8,7 +8,7 @@ import { API_URL } from '../src/utils/api';
 interface VerifyScreenProps {
   email: string;
   onBack: () => void;
-  onSuccess: (token: string, requiresSetup: boolean) => void;
+  onSuccess: (accessToken: string, refreshToken: string, requiresSetup: boolean) => void;
 }
 
 const AnimatedView = Animated.View as any;
@@ -69,7 +69,7 @@ export default function VerifyScreen({ email, onBack, onSuccess }: VerifyScreenP
         Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
 
         setTimeout(() => {
-          onSuccess(data.token, data.requiresProfileSetup);
+          onSuccess(data.accessToken, data.refreshToken, data.requiresProfileSetup);
         }, 1200);
       } else {
         Alert.alert("Błąd", data.error || "Nieprawidłowy kod OTP");
