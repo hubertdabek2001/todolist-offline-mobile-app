@@ -42,7 +42,7 @@ export default function ShareListScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Udostępnij listę' }} />
+      <Stack.Screen options={{ title: 'Udostępnij listę', headerShown: true }} />
       
       {chunks.length > 0 ? (
         <View style={styles.qrContainer}>

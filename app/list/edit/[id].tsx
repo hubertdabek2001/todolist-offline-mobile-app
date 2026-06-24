@@ -84,6 +84,7 @@ export default function EditListScreen() {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <Stack.Screen options={{ 
         title: 'Ustawienia listy', 
+        headerShown: true,
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text
       }} />
