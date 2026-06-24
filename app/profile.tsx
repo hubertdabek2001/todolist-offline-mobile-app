@@ -112,6 +112,7 @@ export default function ProfileScreen() {
       <Stack.Screen 
         options={{ 
           title: "Twój Profil", 
+          headerShown: true,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
         }} 

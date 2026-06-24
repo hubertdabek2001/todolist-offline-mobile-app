@@ -380,6 +380,7 @@ export default function ListDetailScreen() {
       <Stack.Screen 
         options={{ 
           title: name || 'Lista',
+          headerShown: true,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerRight: () => (
