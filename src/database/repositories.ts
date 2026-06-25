@@ -236,4 +236,21 @@ export async function applyPulledData(data: any): Promise<void> {
   } catch (error) {
     console.error("[SYNC] Błąd podczas wgrywania zaciągniętych danych:", error);
   }
+
+  // Zastąp stary blok wstawiania list tym nowym:
+    for (const list of data.lists || []) {
+      if (list.isArchived) {
+        // Jeśli lista jest w chmurze zarchiwizowana, USUŃ ją z lokalnego SQLite
+        await db.runAsync('DELETE FROM todo_lists WHERE id = ?', list.id);
+        // SQLite nie zawsze wspiera kaskady domyślnie, więc kasujemy też jej zadania
+        await db.runAsync('DELETE FROM tasks WHERE todo_list_id = ?', list.id);
+      } else {
+        // Jeśli nie jest, wstaw/nadpisz tak jak dotychczas
+        await db.runAsync(
+          'INSERT OR REPLACE INTO todo_lists (id, name, is_archived, is_shared, spent_time_seconds) VALUES (?, ?, ?, ?, ?)',
+          list.id, list.name, 0, list.isShared ? 1 : 0, list.spentTimeSeconds || 0
+        );
+      }
+    }
 }
+

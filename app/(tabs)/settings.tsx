@@ -196,6 +196,12 @@ export default function SettingsScreen() {
                 }
               />
               <SettingRow 
+                icon="archive-outline" 
+                title="Zarchiwizowane listy" 
+                onPress={() => router.push('/archived')}
+                rightElement={<Ionicons name="chevron-forward" size={20} color={colors.outlineVariant} />}
+              />
+              <SettingRow 
                 icon="log-out-outline" 
                 title="Wyloguj się" 
                 onPress={handleLogout}

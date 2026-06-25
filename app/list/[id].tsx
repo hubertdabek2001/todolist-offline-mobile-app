@@ -31,7 +31,7 @@ import {
   toggleTaskStatus
 } from '../../src/database/repositories';
 import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
-import { fetchActivityLogs } from '../../src/utils/api';
+import { archiveListAPI, fetchActivityLogs } from '../../src/utils/api';
 
 export default function ListDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
@@ -177,6 +177,33 @@ export default function ListDetailScreen() {
     await toggleSubTaskStatus(subTask.id, subTask.is_completed);
     addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'SUBTASK', subTask.title); // LOKALNY LOG
     await loadData();
+  };
+
+  const handleArchive = () => {
+    Alert.alert(
+      "Zakończenie listy",
+      "Czy na pewno chcesz zarchiwizować tę listę? Zostanie ona bezpowrotnie usunięta z pamięci urządzenia i przeniesiona do archiwum w chmurze.",
+      [
+        { text: "Anuluj", style: "cancel" },
+        {
+          text: "Zakończ Listę",
+          style: "destructive",
+          onPress: async () => {
+            const success = await archiveListAPI(id as string);
+            if (success) {
+              await deleteTask(id as string); // Użyj deleteList jeśli posiadasz taką w repositories, w przeciwnym razie:
+              const { deleteList } = await import('../../src/database/repositories');
+              await deleteList(id as string); 
+              
+              Alert.alert("Sukces", "Lista pomyślnie zarchiwizowana.");
+              router.replace('/(tabs)');
+            } else {
+              Alert.alert("Błąd", "Do zarchiwizowania tej listy niezbędne jest połączenie z serwerem.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleDeleteTask = (task: Task) => {
@@ -376,6 +403,10 @@ export default function ListDetailScreen() {
           headerTintColor: colors.text,
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+              {/* --- PRZYCISK ARCHIWIZACJI --- */}
+              <TouchableOpacity onPress={handleArchive}>
+                <Ionicons name="archive-outline" size={24} color={colors.error} />
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => {
                 setIsActivityFeedVisible(true);
                 loadActivityHistory();

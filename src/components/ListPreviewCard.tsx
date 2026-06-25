@@ -241,3 +241,44 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
 });
+
+// --- ARCHIWIZACJA ---
+export const archiveListAPI = async (listId: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return false;
+  try {
+    let response = await fetch(`${API_URL}/lists/${listId}/archive`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      response = await fetch(`${API_URL}/lists/${listId}/archive`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    }
+    return response.ok;
+  } catch (e) { return false; }
+};
+
+export const restoreListAPI = async (listId: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return false;
+  try {
+    let response = await fetch(`${API_URL}/lists/${listId}/restore`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      response = await fetch(`${API_URL}/lists/${listId}/restore`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+    }
+    return response.ok;
+  } catch (e) { return false; }
+};
+
+export const fetchArchivedListsAPI = async () => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return [];
+  try {
+    let response = await fetch(`${API_URL}/lists/archived`, { method: 'GET', headers: { 'Authorization': `Bearer ${token}` } });
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      response = await fetch(`${API_URL}/lists/archived`, { method: 'GET', headers: { 'Authorization': `Bearer ${token}` } });
+    }
+    if (response.ok) return await response.json();
+    return [];
+  } catch (e) { return []; }
+};
