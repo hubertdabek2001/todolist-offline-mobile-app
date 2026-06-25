@@ -4,6 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Button, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import ListSettingsModal from '../../src/components/ListSettingsModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
@@ -28,7 +29,7 @@ export default function SharedListsScreen() {
   const [currentSession, setCurrentSession] = useState<string | null>(null);
   const [expectedTotal, setExpectedTotal] = useState<number>(1);
   const [senderInfo, setSenderInfo] = useState<{email: string, name: string} | null>(null);
-  
+  const insets = useSafeAreaInsets();
   // Stan na udostępnione listy
   const [sharedLists, setSharedLists] = useState<TodoList[]>([]);
   
@@ -143,8 +144,12 @@ export default function SharedListsScreen() {
 
   // Renderowanie kafelka pojedynczej, udostępnionej listy
 return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {renderToast()}
+      <View style={styles.titleContainer}>
+                <Text style={[styles.mainTitle, { color: colors.text }]}>Wspólne Listy</Text>
+                <Text style={[styles.subTitle, { color: colors.textSecondary }]}>Zarządzaj swoimi zadaniami efektywnie.</Text>
+      </View>
       
       
       {/* KARUZELA WSPÓLNYCH LIST */}
@@ -243,8 +248,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   carouselContainer: {
     flex: 1, 
-    paddingTop: 20,
-    paddingBottom: 90, // Robimy miejsce na nasz pływający przycisk FAB!
+    paddingVertical: 10, 
+     // Robimy miejsce na nasz pływający przycisk FAB!
   },
   emptyGlobalText: {
     textAlign: 'center',
@@ -271,6 +276,19 @@ const styles = StyleSheet.create({
   listName: {
     fontSize: 18,
     fontWeight: '500',
+  },
+    titleContainer: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  mainTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  subTitle: {
+    fontSize: 15,
   },
 
   toastContainer: { position: 'absolute', top: 60, left: 20, right: 20, padding: 16, borderRadius: 12, zIndex: 100, elevation: 10, alignItems: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },

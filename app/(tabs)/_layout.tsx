@@ -37,6 +37,7 @@ export default function TabLayout() {
         name="shared"
         options={{
           title: 'Wspólne',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={24} color={color} />,
         }}
       />

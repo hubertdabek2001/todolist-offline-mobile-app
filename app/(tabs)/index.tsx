@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     flex: 1, 
-    paddingVertical: 10, 
+    paddingVertical: 10,
   },
   emptyGlobalText: {
     textAlign: 'center',
