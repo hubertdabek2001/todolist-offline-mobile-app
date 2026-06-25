@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import {
@@ -62,6 +63,29 @@ export default function ListDetailScreen() {
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
 
   const router = useRouter();
+
+  const formatDateInput = (text: string) => {
+    // Remove all non-numeric characters
+    const numericText = text.replace(/\D/g, '');
+
+    // Add dashes for DD-MM-YYYY format
+    let formattedText = numericText;
+    if (numericText.length > 2 && numericText.length <= 4) {
+      formattedText = `${numericText.slice(0, 2)}-${numericText.slice(2)}`;
+    } else if (numericText.length > 4) {
+      formattedText = `${numericText.slice(0, 2)}-${numericText.slice(2, 4)}-${numericText.slice(4, 8)}`;
+    }
+
+    return formattedText;
+  };
+
+  const handleTaskDueDateChange = (text: string) => {
+    setEditingTaskDueDate(formatDateInput(text));
+  };
+
+  const handleSubTaskDueDateChange = (text: string) => {
+    setEditingSubTaskDueDate(formatDateInput(text));
+  };
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -122,8 +146,6 @@ export default function ListDetailScreen() {
         authorName: "Ktoś" // Zostanie zaktualizowane przy pull'u z bazy
       };
       
-      setActivityLogs(prev => [newLog, ...prev]);
-      
       // 2. Jeśli panel jest zamknięty, informujemy użytkownika małym powiadomieniem
       if (!isActivityFeedVisible) {
          Alert.alert("Aktualizacja", `Pojawiła się nowa aktywność ("${latestActivity.entityName}"). Sprawdź oś czasu!`);
@@ -131,8 +153,12 @@ export default function ListDetailScreen() {
 
       // TODO w Fazie 5: Tutaj wywołamy funkcję PULL, która automatycznie
       // dociągnie to nowe zadanie z serwera i zaktualizuje lokalne SQLite!
+
+      setTimeout(() => {
+        setActivityLogs(prev => [newLog, ...prev]);
+      }, 0);
     }
-  }, [latestActivity]); // Usunięto drugi useEffect
+  }, [latestActivity, isActivityFeedVisible]);
 
   const handleAddItem = async () => {
     if (inputText.trim() === '' || !id || isSubmitting) return;
@@ -237,10 +263,38 @@ export default function ListDetailScreen() {
     const currentSubTasks = subTasks.filter(st => st.task_id === item.id);
     const isEditing = editingTaskId === item.id;
 
+    const renderRightActions = () => (
+      <View style={styles.swipeActionContainer}>
+        <TouchableOpacity
+          style={styles.swipeActionButton}
+          onPress={() => setSelectedTaskForSubtask(item)}
+        >
+          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          <Text style={[styles.swipeActionText, { color: colors.primary }]}>Dodaj podzadanie</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
+    const renderLeftActions = () => (
+      <View style={[styles.swipeActionContainer, { alignItems: 'flex-start', paddingLeft: 16 }]}>
+        <TouchableOpacity
+          style={styles.swipeActionButton}
+          onPress={() => setSelectedTaskForSubtask(item)}
+        >
+          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          <Text style={[styles.swipeActionText, { color: colors.primary }]}>Dodaj podzadanie</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
     return (
       <View style={[styles.taskGroupContainer, { backgroundColor: colors.surface, shadowColor: theme === 'dark' ? '#000' : '#000' }]}>
-        <View style={styles.taskRow}>
-          <TouchableOpacity onPress={() => handleToggleTask(item)} style={styles.checkbox}>
+        <Swipeable
+          renderRightActions={renderRightActions}
+          renderLeftActions={renderLeftActions}
+        >
+          <View style={[styles.taskRow, { backgroundColor: colors.surface }]}>
+            <TouchableOpacity onPress={() => handleToggleTask(item)} style={styles.checkbox}>
             <Ionicons 
               name={item.is_completed ? "checkbox" : "square-outline"} 
               size={24} 
@@ -261,8 +315,10 @@ export default function ListDetailScreen() {
                 <TextInput
                   style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
                   value={editingTaskDueDate}
-                  onChangeText={setEditingTaskDueDate}
-                  placeholder="YYYY-MM-DD"
+                  onChangeText={handleTaskDueDateChange}
+                  placeholder="DD-MM-YYYY"
+                  keyboardType="numeric"
+                  maxLength={10}
                 />
                 <TouchableOpacity 
                   onPress={() => setEditingTaskPriority(editingTaskPriority === 'normal' ? 'high' : 'normal')}
@@ -307,9 +363,10 @@ export default function ListDetailScreen() {
               >
                 <Ionicons name="trash-outline" size={20} color={colors.error} />
               </TouchableOpacity>
-            </>
-          )}
-        </View>
+              </>
+            )}
+          </View>
+        </Swipeable>
 
         {currentSubTasks.map((subTask) => {
           const isEditingSubTask = editingSubTaskId === subTask.id;
@@ -336,8 +393,10 @@ export default function ListDetailScreen() {
                     <TextInput
                       style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
                       value={editingSubTaskDueDate}
-                      onChangeText={setEditingSubTaskDueDate}
-                      placeholder="YYYY-MM-DD"
+                      onChangeText={handleSubTaskDueDateChange}
+                      placeholder="DD-MM-YYYY"
+                      keyboardType="numeric"
+                      maxLength={10}
                     />
                     <TouchableOpacity 
                       onPress={() => setEditingSubTaskPriority(editingSubTaskPriority === 'normal' ? 'high' : 'normal')}
@@ -538,7 +597,7 @@ export default function ListDetailScreen() {
                           <Text style={{ fontWeight: 'bold' }}>{log.authorName}</Text> {actionText} {entityText}:
                         </Text>
                         <Text style={{ color: colors.text, fontSize: 16, fontStyle: 'italic', marginVertical: 4 }}>
-                          "{log.entityName}"
+                          &quot;{log.entityName}&quot;
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                           {dateString} o {timeString}
@@ -663,5 +722,20 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  swipeActionContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
+  swipeActionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swipeActionText: {
+    fontSize: 10,
+    marginTop: 4,
+    fontWeight: 'bold',
   },
 });
