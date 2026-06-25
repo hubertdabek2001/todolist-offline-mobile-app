@@ -98,25 +98,7 @@ export default function MyListsScreen() {
           )}
         </View>
 
-        {/* PILNE ZADANIA (MOCK) */}
-        <View style={styles.urgentCardContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.urgentCard, 
-              { backgroundColor: colors.surface, shadowColor: theme === 'dark' ? '#000' : '#000' }
-            ]}
-            activeOpacity={0.8}
-          >
-            <View style={styles.urgentIconContainer}>
-              <Ionicons name="alert" size={20} color="#e53935" />
-            </View>
-            <View style={styles.urgentTextContainer}>
-              <Text style={[styles.urgentTitle, { color: colors.text }]}>Pilne Zadania</Text>
-              <Text style={[styles.urgentSubtitle, { color: colors.textSecondary }]}>3 na dzisiaj</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        
       </View>
 
       {/* 2. Naturalnie pozycjonowany dolny kontener */}
