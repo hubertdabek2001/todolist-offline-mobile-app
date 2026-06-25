@@ -606,7 +606,7 @@ export default function ListDetailScreen() {
         <View style={styles.modalOverlay}>
           {/* Tło do zamykania przy kliknięciu poza okienkiem */}
           <TouchableOpacity 
-            style={StyleSheet.absoluteFillObject} 
+            style={StyleSheet.absoluteFill} 
             activeOpacity={1} 
             onPress={() => setIsActivityFeedVisible(false)} 
           />

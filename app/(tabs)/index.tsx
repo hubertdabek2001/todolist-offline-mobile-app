@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
+import ListSettingsModal from '../../src/components/ListSettingsModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { createList, evaluateAutoPriority, getMyLists } from '../../src/database/repositories';
 
@@ -16,12 +17,16 @@ interface TodoList {
   priority: string;
   due_date: string | null;
   auto_priority: number;
+  edit_mode?: number;
+  icon?: string | null;
 }
 
 export default function MyListsScreen() {
   const [lists, setLists] = useState<TodoList[]>([]);
   const [newListName, setNewListName] = useState('');
   const [isInputVisible, setIsInputVisible] = useState(false);
+  const [selectedListForSettings, setSelectedListForSettings] = useState<TodoList | null>(null);
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const router = useRouter();
   const { colors, theme } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -92,6 +97,10 @@ export default function MyListsScreen() {
                     pathname: `/list/${item.id}`,
                     params: { name: item.name }
                   } as any)}
+                  onLongPress={() => {
+                    setSelectedListForSettings(item);
+                    setIsSettingsVisible(true);
+                  }}
                 />
               )}
             />
@@ -144,6 +153,13 @@ export default function MyListsScreen() {
           </View>
         )}
       </View>
+
+      <ListSettingsModal 
+        visible={isSettingsVisible} 
+        onClose={() => setIsSettingsVisible(false)} 
+        list={selectedListForSettings as any} 
+        onSave={() => { loadLists(); }} 
+      />
     </KeyboardAvoidingView>
   );
 }

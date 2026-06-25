@@ -105,6 +105,13 @@ export async function initDatabase() {
       console.log("Kolumna edit_mode została pomyślnie dodana.");
     }
 
+    const hasIconColumn = columns.some(col => col.name === 'icon');
+    if (!hasIconColumn) {
+      console.log("Wykryto brakującą kolumnę icon! Trwa aktualizacja bazy...");
+      await db.runAsync("ALTER TABLE todo_lists ADD COLUMN icon TEXT;");
+      console.log("Kolumna icon została pomyślnie dodana.");
+    }
+
     const tasksColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(tasks);');
     const tasksHasPriority = tasksColumns.some(col => col.name === 'priority');
     if (!tasksHasPriority) {

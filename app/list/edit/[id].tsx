@@ -25,6 +25,7 @@ export default function EditListScreen() {
   const [autoPriority, setAutoPriority] = useState(0);
   const [priority, setPriority] = useState('normal');
   const [dueDate, setDueDate] = useState('');
+  const [icon, setIcon] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
   const { colors } = useAppTheme();
@@ -42,6 +43,7 @@ export default function EditListScreen() {
         setAutoPriority(listData.auto_priority || 0);
         setPriority(listData.priority || 'normal');
         setDueDate(listData.due_date || '');
+        setIcon((listData as any).icon || '');
       }
     }
     loadData();
@@ -50,7 +52,7 @@ export default function EditListScreen() {
   const handleSave = async () => {
     if (listName.trim() === '' || !id) return;
     setIsSaving(true);
-    await updateListDetails(id, listName.trim(), listColor, editMode, autoPriority, priority, dueDate || null);
+    await updateListDetails(id, listName.trim(), listColor, editMode, autoPriority, priority, dueDate || null, icon || null);
     if (autoPriority === 1) {
       await evaluateAutoPriority(id);
     }

@@ -41,6 +41,7 @@ export interface TodoList {
   due_date: string | null;
   auto_priority: number;
   edit_mode: number;
+  icon?: string | null;
 }
 
 export async function createList(name: string) {
@@ -132,10 +133,10 @@ export async function updateListName(id: string, newName: string) {
   await db.runAsync('UPDATE todo_lists SET name = ? WHERE id = ?', [safe(newName), safe(safeId)]);
 }
 
-export async function updateListDetails(id: string, newName: string, newColor: string, editMode: number, autoPriority: number, priority: string, dueDate: string | null) {
+export async function updateListDetails(id: string, newName: string, newColor: string, editMode: number, autoPriority: number, priority: string, dueDate: string | null, icon?: string | null) {
   const safeId = Array.isArray(id) ? id[0] : id;
   const db = getDb();
-  await db.runAsync('UPDATE todo_lists SET name = ?, primary_color = ?, edit_mode = ?, auto_priority = ?, priority = ?, due_date = ? WHERE id = ?', [safe(newName), safe(newColor), safe(editMode), safe(autoPriority), safe(priority), safe(dueDate), safe(safeId)]);
+  await db.runAsync('UPDATE todo_lists SET name = ?, primary_color = ?, edit_mode = ?, auto_priority = ?, priority = ?, due_date = ?, icon = ? WHERE id = ?', [safe(newName), safe(newColor), safe(editMode), safe(autoPriority), safe(priority), safe(dueDate), safe(icon ?? null), safe(safeId)]);
 }
 
 export async function updateTaskDetails(taskId: string, newTitle: string, newPriority: string, newDueDate: string | null) {

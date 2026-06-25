@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Button, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
+import ListSettingsModal from '../../src/components/ListSettingsModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { getSharedLists } from '../../src/database/repositories';
 import { importListFromQR } from '../../src/utils/qrPayloadManager';
@@ -31,6 +32,9 @@ export default function SharedListsScreen() {
   // Stan na udostępnione listy
   const [sharedLists, setSharedLists] = useState<TodoList[]>([]);
   
+  const [selectedListForSettings, setSelectedListForSettings] = useState<TodoList | null>(null);
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+
   const router = useRouter();
   const { colors } = useAppTheme();
 
@@ -167,6 +171,10 @@ return (
                   pathname: `/list/${item.id}`,
                   params: { name: item.name }
                 } as any)}
+                onLongPress={() => {
+                  setSelectedListForSettings(item);
+                  setIsSettingsVisible(true);
+                }}
               />
             )}
           />
@@ -216,6 +224,15 @@ return (
           </View>
         </View>
       </Modal>
+
+      <ListSettingsModal 
+        visible={isSettingsVisible} 
+        onClose={() => setIsSettingsVisible(false)} 
+        list={selectedListForSettings as any} 
+        onSave={() => {
+          getSharedLists().then(data => setSharedLists(data as TodoList[]));
+        }} 
+      />
     </View>
   );
 

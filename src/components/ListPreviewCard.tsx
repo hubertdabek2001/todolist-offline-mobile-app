@@ -12,11 +12,12 @@ export const CARD_MARGIN = 8;
 export const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN * 2;
 
 interface ListPreviewCardProps {
-  list: { id: string; name: string; primary_color?: string | null; priority?: string; due_date?: string | null };
+  list: { id: string; name: string; primary_color?: string | null; priority?: string; due_date?: string | null; icon?: string | null };
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
-export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps) {
+export default function ListPreviewCard({ list, onPress, onLongPress }: ListPreviewCardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { colors, theme } = useAppTheme();
 
@@ -31,7 +32,7 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
     : colors.surface;
 
   // Assuming an arbitrary icon logic, default to brief-case
-  const defaultIcon = list.name.toLowerCase().includes('zakup') ? 'cart-outline' : 'briefcase-outline';
+  const defaultIcon = list.icon ? list.icon as any : (list.name.toLowerCase().includes('zakup') ? 'cart-outline' : 'briefcase-outline');
 
   const completedCount = tasks.filter(t => t.is_completed).length;
   const totalCount = tasks.length;
@@ -41,6 +42,7 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
     <TouchableOpacity 
       activeOpacity={0.9} 
       onPress={onPress} 
+      onLongPress={onLongPress}
       style={[
         styles.cardContainer, 
         { 
@@ -66,7 +68,7 @@ export default function ListPreviewCard({ list, onPress }: ListPreviewCardProps)
           </View>
         </View>
 
-        <ScrollView style={styles.tasksContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.tasksContainer} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
           {tasks.map((task) => (
             <View key={task.id} style={styles.taskRow}>
               <Ionicons 
