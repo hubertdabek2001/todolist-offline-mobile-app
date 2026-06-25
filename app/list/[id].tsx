@@ -234,7 +234,7 @@ export default function ListDetailScreen() {
   const handleToggleSubTask = async (subTask: SubTask) => {
     const newStatus = subTask.is_completed ? 0 : 1;
     await toggleSubTaskStatus(subTask.id, subTask.is_completed);
-    addLocalLog(newStatus === 1 ? 'COMPLETE' : 'SUBTASK', subTask.title); // LOKALNY LOG
+    addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'SUBTASK', subTask.title); // LOKALNY LOG
     await loadData();
   };
 
@@ -319,7 +319,6 @@ export default function ListDetailScreen() {
           onPress={() => setSelectedTaskForSubtask(item)}
         >
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-          <Text style={[styles.swipeActionText, { color: colors.primary }]}>Dodaj podzadanie</Text>
         </TouchableOpacity>
       </View>
     );
@@ -331,7 +330,6 @@ export default function ListDetailScreen() {
           onPress={() => setSelectedTaskForSubtask(item)}
         >
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-          <Text style={[styles.swipeActionText, { color: colors.primary }]}>Dodaj podzadanie</Text>
         </TouchableOpacity>
       </View>
     );
@@ -356,17 +354,18 @@ export default function ListDetailScreen() {
               <TextInput
                 style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
                 value={editingTaskTitle}
-                onChangeText={handleTaskDueDateChange}
-                  placeholder="DD-MM-YYYY"
-                  keyboardType="numeric"
-                  maxLength={10}
+                onChangeText={setEditingTaskTitle}
+                placeholder="Tytuł zadania"
+                autoFocus
               />
               <View style={styles.editRow}>
                 <TextInput
                   style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
                   value={editingTaskDueDate}
-                  onChangeText={setEditingTaskDueDate}
-                  placeholder="YYYY-MM-DD"
+                  onChangeText={handleTaskDueDateChange}
+                  placeholder="DD-MM-YYYY"
+                  keyboardType="numeric"
+                  maxLength={10}
                 />
                 <TouchableOpacity 
                   onPress={() => setEditingTaskPriority(editingTaskPriority === 'normal' ? 'high' : 'normal')}
@@ -386,7 +385,7 @@ export default function ListDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text 
                 style={[styles.taskTitle, { color: item.priority === 'high' ? colors.error : colors.text }, item.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                onLongPress={() => { if (editMode === 1) handleEditTask(item); }}
+                onLongPress={() => { handleEditTask(item); }}
               >
                 {item.title}
               </Text>
@@ -422,6 +421,7 @@ export default function ListDetailScreen() {
             </>
           )}
         </View>
+        </Swipeable>
 
         {currentSubTasks.map((subTask) => {
           const isEditingSubTask = editingSubTaskId === subTask.id;
@@ -470,7 +470,7 @@ export default function ListDetailScreen() {
                 <View style={{ flex: 1 }}>
                   <Text 
                     style={[styles.subTaskTitle, { color: subTask.priority === 'high' ? colors.error : colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                    onLongPress={() => { if (editMode === 1) handleEditSubTask(subTask); }}
+                    onLongPress={() => { handleEditSubTask(subTask); }}
                   >
                     {subTask.title}
                   </Text>
@@ -499,7 +499,6 @@ export default function ListDetailScreen() {
           );
         })}
       </View>
-      </Swipeable>
     );
   };
 

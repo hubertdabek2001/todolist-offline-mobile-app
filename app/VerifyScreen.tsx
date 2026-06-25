@@ -155,7 +155,7 @@ export default function VerifyScreen({ email, onBack, onSuccess }: VerifyScreenP
 // ... Styl bez zmian (z oryginalnego pliku VerifyScreen)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f9fb' },
-  successOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 97, 150, 0.96)', zIndex: 999, alignItems: 'center', justifyContent: 'center' },
+  successOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0, 97, 150, 0.96)', zIndex: 999, alignItems: 'center', justifyContent: 'center' },
   successCentered: { alignItems: 'center', justifyContent: 'center' },
   successIconWrapper: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   successTitle: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginBottom: 8 },

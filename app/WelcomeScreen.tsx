@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     opacity: 0.25,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   safeArea: {

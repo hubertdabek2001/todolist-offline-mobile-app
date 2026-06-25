@@ -23,9 +23,9 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
     await performSync();
     
     // Zwracamy status dla systemu operacyjnego telefonu
-    return BackgroundFetch.BackgroundFetchResult.NewData;
+    return BackgroundFetch.BackgroundTaskResult.Success;
   } catch (error) {
-    return BackgroundFetch.BackgroundFetchResult.Failed;
+    return BackgroundFetch.BackgroundTaskResult.Failed;
   }
 });
 
@@ -49,8 +49,6 @@ export default function RootLayout() {
       try {
         await BackgroundFetch.registerTaskAsync(BACKGROUND_SYNC_TASK, {
           minimumInterval: 15 * 60, // Minimalny odstęp to 15 minut (narzucane przez iOS/Android)
-          stopOnTerminate: false,   // Próbuj działać nawet po ubiciu apki (na Androidzie)
-          startOnBoot: true,        // Wznów po zrestartowaniu telefonu (na Androidzie)
         });
         console.log("[INIT] Zadanie w tle pomyślnie zarejestrowane.");
       } catch (err) {

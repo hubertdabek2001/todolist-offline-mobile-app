@@ -12,7 +12,7 @@ interface ThemeContextType {
   setThemePreference: (theme: ThemeType) => void;
   accentTheme: AccentTheme;                                 // NOWE
   setAccentTheme: (accent: AccentTheme) => void;            // NOWE
-  colors: typeof Colors.light | typeof Colors.dark;
+  colors: Record<string, string>;
 }
 
 const ThemeContext = createContext<ThemeContextType>({

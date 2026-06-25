@@ -1,7 +1,8 @@
 // src/services/syncService.ts
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
-import { API_URL } from '../utils/api';
+import { applyPulledData } from '../database/repositories';
+import { API_URL, fetchSyncPull, refreshAccessToken } from '../utils/api';
 
 export async function performSync() {
   try {
@@ -91,11 +92,11 @@ export async function performSync() {
 export const syncListsAfterLogin = async (token: string) => {
   try {
     // 1. Pobierz listy z serwera
-    const lists = await fetchUserLists(token);
+    const data = await fetchSyncPull();
     
     // 2. Zapisz je do lokalnego SQLite
-    if (lists && lists.length > 0) {
-      saveListsLocally(lists);
+    if (data) {
+      await applyPulledData(data);
     }
     
     return true;
