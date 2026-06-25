@@ -61,17 +61,6 @@ export default function MyListsScreen() {
       
       {/* 1. Kontener z flex: 1 zajmujący całą górną przestrzeń */}
       <View style={{ flex: 1 }}>
-        
-        {/* HEADER */}
-        <View style={[styles.headerContainer, {backgroundColor: colors.background, borderBottomColor: colors.outlineVariant }]}>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="checkmark-circle-outline" size={28} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Zadania</Text>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.titleContainer}>
           <Text style={[styles.mainTitle, { color: colors.text }]}>Moje Listy</Text>

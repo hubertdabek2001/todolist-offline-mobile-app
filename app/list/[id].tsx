@@ -3,31 +3,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import {
-    createSubTask,
-    createTask,
-    deleteSubTask,
-    deleteTask,
-    getSubTasksForList,
-    getTasksByList,
-    SubTask,
-    Task,
-    toggleSubTaskStatus,
-    toggleTaskStatus
+  createSubTask,
+  createTask,
+  deleteSubTask,
+  deleteTask,
+  getSubTasksForList,
+  getTasksByList,
+  SubTask,
+  Task,
+  toggleSubTaskStatus,
+  toggleTaskStatus
 } from '../../src/database/repositories';
 import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
 import { fetchActivityLogs } from '../../src/utils/api';
@@ -380,6 +380,7 @@ export default function ListDetailScreen() {
       <Stack.Screen 
         options={{ 
           title: name || 'Lista',
+          headerShown: true,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerRight: () => (
