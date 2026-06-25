@@ -146,6 +146,7 @@ return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {renderToast()}
       
+      
       {/* KARUZELA WSPÓLNYCH LIST */}
       <View style={styles.carouselContainer}>
         {sharedLists.length === 0 ? (
