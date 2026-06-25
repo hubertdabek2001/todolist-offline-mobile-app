@@ -111,7 +111,7 @@ export default function MyListsScreen() {
       </View>
 
       {/* 2. Naturalnie pozycjonowany dolny kontener */}
-      <View style={[styles.floatingInputWrapper, { paddingBottom: Math.max(24, insets.bottom + 10) }]}>
+      <View style={[styles.floatingInputWrapper, { bottom: Math.max(20, insets.bottom + 10) }]}>
         {!isInputVisible ? (
           // Domyślnie widoczny tylko FAB
           <TouchableOpacity 
@@ -198,6 +198,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   carouselContainer: {
+    marginBottom: 80,
     flex: 1, 
     paddingVertical: 10,
   },
@@ -242,6 +243,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   floatingInputWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     // Usunięto position: 'absolute'
     paddingHorizontal: 20,
     paddingTop: 10,

@@ -114,7 +114,7 @@ export default function SharedListsScreen() {
           showToast(`Pobrano od: ${name}`, "success"); // Używa zdekodowanej nazwy z kodu QR!
           
           router.push({
-            pathname: `/list/${result.listId}`,
+            pathname: `/list/${result.listId}` as any,
             params: { name: result.listName || 'Udostępniona lista' }
           });
         } else {
@@ -247,6 +247,7 @@ return (
 const styles = StyleSheet.create({
   container: { flex: 1 },
   carouselContainer: {
+    marginBottom: 80,
     flex: 1, 
     paddingVertical: 10, 
      // Robimy miejsce na nasz pływający przycisk FAB!
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
   // Dodane style dla kafelków z listy
   listContentContainer: {
     padding: 16,
-    paddingBottom: 100, // Zostawiamy miejsce na przycisk FAB
+    paddingBottom: 20, // Zostawiamy miejsce na przycisk FAB
   },
   listCard: {
     padding: 20,

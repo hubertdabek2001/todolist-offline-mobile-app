@@ -53,7 +53,7 @@ export default function ListPreviewCard({ list, onPress, onLongPress }: ListPrev
     >
       <View style={styles.innerContainer}>
         <View style={styles.headerSection}>
-          <View backgroundColor={colors.secondary} style={styles.iconContainer} >
+          <View style={styles.iconContainer} >
             <Ionicons name={defaultIcon} size={28} color={colors.onPrimary} />
           </View>
 
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
-    height: 360,
+    flex: 1,
   },
   innerContainer: {
     flex: 1,
