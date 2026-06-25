@@ -281,7 +281,7 @@ export default function ListDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text 
                 style={[styles.taskTitle, { color: item.priority === 'high' ? colors.error : colors.text }, item.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                onLongPress={() => { if (editMode === 1) handleEditTask(item); }}
+                onLongPress={() => handleEditTask(item)}
               >
                 {item.title}
               </Text>
@@ -299,13 +299,6 @@ export default function ListDetailScreen() {
                 style={styles.actionIcon}
               >
                 <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                onPress={() => handleEditTask(item)} 
-                style={styles.actionIcon}
-              >
-                <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -363,7 +356,7 @@ export default function ListDetailScreen() {
                 <View style={{ flex: 1 }}>
                   <Text 
                     style={[styles.subTaskTitle, { color: subTask.priority === 'high' ? colors.error : colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                    onLongPress={() => { if (editMode === 1) handleEditSubTask(subTask); }}
+                    onLongPress={() => handleEditSubTask(subTask)}
                   >
                     {subTask.title}
                   </Text>
@@ -373,13 +366,6 @@ export default function ListDetailScreen() {
 
               {editMode === 1 && !isEditingSubTask && (
                 <>
-                  <TouchableOpacity 
-                    onPress={() => handleEditSubTask(subTask)} 
-                    style={styles.actionIcon}
-                  >
-                    <Ionicons name="pencil-outline" size={16} color={colors.textSecondary} />
-                  </TouchableOpacity>
-
                   <TouchableOpacity 
                     onPress={() => handleDeleteSubTask(subTask)} 
                     style={styles.actionIcon}
@@ -522,12 +508,12 @@ export default function ListDetailScreen() {
                 activityLogs.map((log, index) => {
                   let actionText = '';
                   let iconName: any = 'ellipse-outline';
-                  let iconColor = colors.primary;
+                  let iconColor: string = colors.primary;
 
-                  if (log.actionType === 'CREATE') { actionText = 'dodał(a)'; iconName = 'add-circle'; iconColor = colors.success; }
-                  else if (log.actionType === 'UPDATE') { actionText = 'zmodyfikował(a)'; iconName = 'pencil'; iconColor = colors.warning; }
-                  else if (log.actionType === 'DELETE') { actionText = 'usunął(a)'; iconName = 'trash'; iconColor = colors.error; }
-                  else if (log.actionType === 'COMPLETE') { actionText = 'ukończył(a)'; iconName = 'checkmark-circle'; iconColor = colors.primary; }
+                  if (log.actionType === 'CREATE') { actionText = 'dodał(a)'; iconName = 'add-circle'; iconColor = colors.success as string; }
+                  else if (log.actionType === 'UPDATE') { actionText = 'zmodyfikował(a)'; iconName = 'pencil'; iconColor = colors.warning as string; }
+                  else if (log.actionType === 'DELETE') { actionText = 'usunął(a)'; iconName = 'trash'; iconColor = colors.error as string; }
+                  else if (log.actionType === 'COMPLETE') { actionText = 'ukończył(a)'; iconName = 'checkmark-circle'; iconColor = colors.primary as string; }
 
                   let entityText = '';
                   if (log.entityType === 'LIST') entityText = 'listę';
