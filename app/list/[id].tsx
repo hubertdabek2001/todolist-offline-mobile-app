@@ -73,7 +73,27 @@ export default function ListDetailScreen() {
 
     const fetchedTasks = await getTasksByList(id);
     const fetchedSubTasks = await getSubTasksForList(id);
-    setTasks(fetchedTasks);
+
+    // --- UKRYTE SORTOWANIE ---
+    const sortedTasks = fetchedTasks.sort((a, b) => {
+      // Reguła 1: Ukończone zadania (is_completed === 1 / true) zawsze lądują na samym dole
+      const isCompletedA = a.is_completed ? 1 : 0;
+      const isCompletedB = b.is_completed ? 1 : 0;
+      
+      if (isCompletedA !== isCompletedB) {
+        return isCompletedA - isCompletedB; 
+      }
+
+      // Reguła 2: Jeśli oba są nieukończone (lub oba ukończone), patrzymy na priorytet.
+      // 'high' dostaje wagę 1, reszta (np. 'normal', null) wagę 0.
+      const priorityA = a.priority === 'high' ? 1 : 0;
+      const priorityB = b.priority === 'high' ? 1 : 0;
+
+      // Zwracamy różnicę tak, aby wyższa waga (1) była na początku listy
+      return priorityB - priorityA;
+    });
+
+    setTasks(sortedTasks);
     setSubTasks(fetchedSubTasks);
   }, [id]);
 

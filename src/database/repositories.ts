@@ -2,6 +2,7 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from './database';
 
+
 const getDb = () => getDatabase();
 
 // 2. TARCZA OCHRONNA: Zmienia wszystko, co jest 'undefined' na bezpiecznego 'nulla' 
@@ -200,4 +201,38 @@ export async function updateTaskTitle(taskId: string, newTitle: string) {
 export async function updateSubTaskTitle(subTaskId: string, newTitle: string) {
   const db = getDb();
   await db.runAsync('UPDATE sub_tasks SET title = ? WHERE id = ?', [safe(newTitle), safe(subTaskId)]);
+}
+
+export async function applyPulledData(data: any): Promise<void> {
+  const db = getDatabase();
+
+  try {
+    // Wstawianie lub nadpisywanie list
+    for (const list of data.lists || []) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO todo_lists (id, name, is_archived, is_shared, spent_time_seconds) VALUES (?, ?, ?, ?, ?)',
+        list.id, list.name, list.isArchived ? 1 : 0, list.isShared ? 1 : 0, list.spentTimeSeconds || 0
+      );
+    }
+
+    // Wstawianie lub nadpisywanie zadań
+    for (const task of data.tasks || []) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO tasks (id, todo_list_id, title, is_completed, spent_time_seconds) VALUES (?, ?, ?, ?, ?)',
+        task.id, task.todoListId, task.title, task.isCompleted ? 1 : 0, task.spentTimeSeconds || 0
+      );
+    }
+
+    // Wstawianie lub nadpisywanie podzadań
+    for (const sub of data.subTasks || []) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO sub_tasks (id, task_id, title, is_completed, spent_time_seconds, parent_sub_task_id) VALUES (?, ?, ?, ?, ?, ?)',
+        sub.id, sub.taskId, sub.title, sub.isCompleted ? 1 : 0, sub.spentTimeSeconds || 0, sub.parentSubTaskId || null
+      );
+    }
+    
+    console.log("[SYNC] Pomyślnie zaciągnięto i zapisano stan z chmury do SQLite.");
+  } catch (error) {
+    console.error("[SYNC] Błąd podczas wgrywania zaciągniętych danych:", error);
+  }
 }

@@ -7,7 +7,7 @@ import { getTasksByList, Task } from '../database/repositories';
 import { useAppTheme } from './ThemeProvider';
 
 const { width } = Dimensions.get('window');
-export const CARD_WIDTH = width * 0.45; 
+export const CARD_WIDTH = width * 0.85; 
 export const CARD_MARGIN = 8;
 export const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN * 2;
 
@@ -177,4 +177,36 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
+  card: {
+    // 1. ZARZĄDZANIE WYSOKOŚCIĄ
+    minHeight: 100, // Zmniejsz wartość (np. z 120 lub 140 na 100), by karty były niższe
+    // maxHeight: 150, // Opcjonalnie: zablokuj maksymalną wysokość, by tekst jej nie rozpychał za bardzo
+    
+    // 2. ZARZĄDZANIE MARGINESAMI I ODSTĘPAMI (Wielkość "wewnątrz" karty)
+    paddingVertical: 16,   // Pionowy odstęp w środku
+    paddingHorizontal: 20, // Poziomy odstęp w środku
+    marginBottom: 12,      // Odstęp między kolejnymi kartami
+    
+    // 3. WYGLĄD
+    borderRadius: 16,      // Mniejsze lub większe zaokrąglenie rogów
+    justifyContent: 'space-between',
+    
+    // Cienie (dla zachowania głębi)
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  
+  // Jeśli podgląd zadań w karcie zajmuje za dużo miejsca, zmniejsz czcionkę:
+  previewText: {
+    fontSize: 13, // Mniejsza czcionka dla zadań w podglądzie
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  
+  title: {
+    fontSize: 18, // Zmiana rozmiaru tytułu listy
+    fontWeight: '700',
+  }
 });

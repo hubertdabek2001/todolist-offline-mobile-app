@@ -64,3 +64,32 @@ export const fetchActivityLogs = async (listId: string) => {
     return [];
   }
 };
+
+export const fetchSyncPull = async () => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return null;
+
+  try {
+    let response = await fetch(`${API_URL}/sync/pull`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return null;
+      response = await fetch(`${API_URL}/sync/pull`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (e) {
+    console.error("[API] Błąd pobierania bazy (PULL):", e);
+    return null;
+  }
+};

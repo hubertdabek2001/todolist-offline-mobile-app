@@ -87,3 +87,20 @@ export async function performSync() {
     console.error("[SYNC] ❌ Błąd połączenia sieciowego podczas synchronizacji:", e);
   }
 }
+
+export const syncListsAfterLogin = async (token: string) => {
+  try {
+    // 1. Pobierz listy z serwera
+    const lists = await fetchUserLists(token);
+    
+    // 2. Zapisz je do lokalnego SQLite
+    if (lists && lists.length > 0) {
+      saveListsLocally(lists);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Błąd podczas synchronizacji początkowej:', error);
+    return false;
+  }
+};

@@ -8,7 +8,7 @@ import { ThemeProvider } from '../src/components/ThemeProvider';
 import { initDatabase } from '../src/database/database';
 
 // Importy dla zadań w tle i synchronizacji
-import * as BackgroundFetch from 'expo-background-fetch';
+import * as BackgroundFetch from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import { performSync } from '../src/services/syncService';
 

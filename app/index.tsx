@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { applyPulledData } from '../src/database/repositories';
+import { fetchSyncPull } from '../src/utils/api';
 
 import LoginScreen from './LoginScreen';
 import SetupProfileScreen from './SetupProfileScreen';
@@ -38,8 +40,20 @@ export default function EntryScreen() {
       setRefreshTokenState(refreshToken);
       setStep('SETUP');
     } else {
+      // 1. Zapisz nowe tokeny
       await SecureStore.setItemAsync('accessToken', accessToken);
       await SecureStore.setItemAsync('refreshToken', refreshToken);
+      
+      // 2. Zablokuj ekran na ładowanie
+      setStep('LOADING'); 
+      
+      // 3. Pobierz chmurę i zrzuć ją do SQLite
+      const cloudData = await fetchSyncPull();
+      if (cloudData) {
+        await applyPulledData(cloudData);
+      }
+      
+      // 4. Dopiero teraz przepuść do aplikacji!
       router.replace('/(tabs)');
     }
   };
@@ -47,6 +61,13 @@ export default function EntryScreen() {
   const handleSetupComplete = async () => {
     await SecureStore.setItemAsync('accessToken', jwtToken);
     await SecureStore.setItemAsync('refreshToken', refreshTokenState);
+    
+    setStep('LOADING');
+    const cloudData = await fetchSyncPull();
+    if (cloudData) {
+      await applyPulledData(cloudData);
+    }
+    
     router.replace('/(tabs)');
   };
 

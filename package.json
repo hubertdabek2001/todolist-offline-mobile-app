@@ -9,6 +9,7 @@
     "@stomp/stompjs": "^7.3.0",
     "expo": "~56.0.12",
     "expo-background-fetch": "~56.0.19",
+    "expo-background-task": "~56.0.19",
     "expo-camera": "~56.0.8",
     "expo-constants": "~56.0.18",
     "expo-crypto": "~56.0.4",
