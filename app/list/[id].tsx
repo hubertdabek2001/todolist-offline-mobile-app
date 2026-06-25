@@ -1,16 +1,12 @@
 // app/list/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
-  Animated,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
-  PanResponder,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,6 +15,8 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ActivityModal from '../../src/components/ActivityModal';
+import TaskEditModal from '../../src/components/TaskEditModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import {
   createSubTask,
@@ -45,15 +43,8 @@ export default function ListDetailScreen() {
   const [inputText, setInputText] = useState('');
   
   const [selectedTaskForSubtask, setSelectedTaskForSubtask] = useState<Task | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [editingTaskTitle, setEditingTaskTitle] = useState('');
-  const [editingSubTaskId, setEditingSubTaskId] = useState<string | null>(null);
-  const [editingSubTaskTitle, setEditingSubTaskTitle] = useState('');
-  
-  const [editingTaskPriority, setEditingTaskPriority] = useState('normal');
-  const [editingTaskDueDate, setEditingTaskDueDate] = useState('');
-  const [editingSubTaskPriority, setEditingSubTaskPriority] = useState('normal');
-  const [editingSubTaskDueDate, setEditingSubTaskDueDate] = useState('');
+  const [selectedTaskToEdit, setSelectedTaskToEdit] = useState<Task | null>(null);
+  const [selectedSubTaskToEdit, setSelectedSubTaskToEdit] = useState<SubTask | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false); 
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -66,72 +57,21 @@ export default function ListDetailScreen() {
 
   const router = useRouter();
 
-  const formatDateInput = (text: string) => {
-    // Remove all non-numeric characters
-    const numericText = text.replace(/\D/g, '');
-    
-    // Add dashes for DD-MM-YYYY format
-    let formattedText = numericText;
-    if (numericText.length > 2 && numericText.length <= 4) {
-      formattedText = `${numericText.slice(0, 2)}-${numericText.slice(2)}`;
-    } else if (numericText.length > 4) {
-      formattedText = `${numericText.slice(0, 2)}-${numericText.slice(2, 4)}-${numericText.slice(4, 8)}`;
-    }
-    
-    return formattedText;
-  };
-
-  const handleTaskDueDateChange = (text: string) => {
-    setEditingTaskDueDate(formatDateInput(text));
-  };
-
-  const handleSubTaskDueDateChange = (text: string) => {
-    setEditingSubTaskDueDate(formatDateInput(text));
-  };
-  // --- LOGIKA GESTU (PRZECIĄGNIJ, BY ZAMKNĄĆ MODAL) ---
-  const panY = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (isActivityFeedVisible) {
-      panY.setValue(0);
-    }
-  }, [isActivityFeedVisible]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          panY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 150 || gestureState.vy > 1.5) {
-          setIsActivityFeedVisible(false);
-        } else {
-          Animated.spring(panY, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 4,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  
 
   // --- LOKALNE LOGOWANIE AKTYWNOŚCI ---
-  const addLocalLog = (action: 'CREATE' | 'UPDATE' | 'DELETE' | 'COMPLETE', entityType: 'LIST' | 'TASK' | 'SUBTASK', entityName: string) => {
+  const addLocalLog = useCallback((action: 'CREATE' | 'UPDATE' | 'DELETE' | 'COMPLETE', entityType: 'LIST' | 'TASK' | 'SUBTASK', entityName: string) => {
     const newLog = {
-      id: Math.random().toString(), // Tymczasowe ID
+      id: Date.now().toString() + Math.random().toString(), // Tymczasowe ID
       actionType: action,
       entityType: entityType,
       entityName: entityName,
       timestamp: new Date().toISOString(),
       authorName: "Ty" // Od razu widać, że to Twoja akcja
     };
-    setActivityLogs(prev => [newLog, ...prev]);
-  };
+     
+      setActivityLogs(prev => [newLog, ...prev]);
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -187,6 +127,7 @@ export default function ListDetailScreen() {
         authorName: "Ktoś" 
       };
       
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityLogs(prev => [newLog, ...prev]);
       
       if (!isActivityFeedVisible) {
@@ -277,40 +218,31 @@ export default function ListDetailScreen() {
   };
 
   const handleEditTask = (task: Task) => {
-    setEditingTaskId(task.id);
-    setEditingTaskTitle(task.title);
-    setEditingTaskPriority(task.priority || 'normal');
-    setEditingTaskDueDate(task.due_date || '');
+    setSelectedTaskToEdit(task);
   };
 
-  const handleSaveTaskEdit = async (taskId: string) => {
-    if (editingTaskTitle.trim() === '') return;
+  const handleSaveTaskEdit = async (taskId: string, title: string, priority: string, dueDate: string) => {
     const { updateTaskDetails } = await import('../../src/database/repositories');
-    await updateTaskDetails(taskId, editingTaskTitle.trim(), editingTaskPriority, editingTaskDueDate || null);
-    addLocalLog('UPDATE', 'TASK', editingTaskTitle.trim()); // LOKALNY LOG
-    setEditingTaskId(null);
+    await updateTaskDetails(taskId, title, priority, dueDate || null);
+    addLocalLog('UPDATE', 'TASK', title);
+    setSelectedTaskToEdit(null);
     await loadData();
   };
 
   const handleEditSubTask = (subTask: SubTask) => {
-    setEditingSubTaskId(subTask.id);
-    setEditingSubTaskTitle(subTask.title);
-    setEditingSubTaskPriority(subTask.priority || 'normal');
-    setEditingSubTaskDueDate(subTask.due_date || '');
+    setSelectedSubTaskToEdit(subTask);
   };
 
-  const handleSaveSubTaskEdit = async (subTaskId: string) => {
-    if (editingSubTaskTitle.trim() === '') return;
+  const handleSaveSubTaskEdit = async (subTaskId: string, title: string, priority: string, dueDate: string) => {
     const { updateSubTaskDetails } = await import('../../src/database/repositories');
-    await updateSubTaskDetails(subTaskId, editingSubTaskTitle.trim(), editingSubTaskPriority, editingSubTaskDueDate || null);
-    addLocalLog('UPDATE', 'SUBTASK', editingSubTaskTitle.trim()); // LOKALNY LOG
-    setEditingSubTaskId(null);
+    await updateSubTaskDetails(subTaskId, title, priority, dueDate || null);
+    addLocalLog('UPDATE', 'SUBTASK', title);
+    setSelectedSubTaskToEdit(null);
     await loadData();
   };
 
   const renderTaskItem = ({ item }: { item: Task }) => {
     const currentSubTasks = subTasks.filter(st => st.task_id === item.id);
-    const isEditing = editingTaskId === item.id;
 
     const renderRightActions = () => (
       <View style={styles.swipeActionContainer}>
@@ -341,47 +273,14 @@ export default function ListDetailScreen() {
           renderLeftActions={renderLeftActions}
         >
           <View style={[styles.taskRow, { backgroundColor: colors.surface }]}>
-          <TouchableOpacity onPress={() => handleToggleTask(item)} style={styles.checkbox}>
-            <Ionicons 
-              name={item.is_completed ? "checkbox" : "square-outline"} 
-              size={24} 
-              color={item.is_completed ? colors.success : colors.textSecondary} 
-            />
-          </TouchableOpacity>
-          
-          {isEditing ? (
-            <View style={styles.editContainer}>
-              <TextInput
-                style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
-                value={editingTaskTitle}
-                onChangeText={setEditingTaskTitle}
-                placeholder="Tytuł zadania"
-                autoFocus
+            <TouchableOpacity onPress={() => handleToggleTask(item)} style={styles.checkbox}>
+              <Ionicons 
+                name={item.is_completed ? "checkbox" : "square-outline"} 
+                size={24} 
+                color={item.is_completed ? colors.success : colors.textSecondary} 
               />
-              <View style={styles.editRow}>
-                <TextInput
-                  style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
-                  value={editingTaskDueDate}
-                  onChangeText={handleTaskDueDateChange}
-                  placeholder="DD-MM-YYYY"
-                  keyboardType="numeric"
-                  maxLength={10}
-                />
-                <TouchableOpacity 
-                  onPress={() => setEditingTaskPriority(editingTaskPriority === 'normal' ? 'high' : 'normal')}
-                  style={[styles.priorityToggle, { backgroundColor: editingTaskPriority === 'high' ? colors.error : colors.surfaceVariant }]}
-                >
-                  <Text style={{ color: editingTaskPriority === 'high' ? colors.onError : colors.text, fontSize: 12 }}>
-                    {editingTaskPriority === 'high' ? 'High' : 'Normal'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleSaveTaskEdit(item.id)} style={{ marginLeft: 8 }}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.success} />
-                </TouchableOpacity>
-              </View>
-              
-            </View>
-          ) : (
+            </TouchableOpacity>
+            
             <View style={{ flex: 1 }}>
               <Text 
                 style={[styles.taskTitle, { color: item.priority === 'high' ? colors.error : colors.text }, item.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
@@ -391,40 +290,38 @@ export default function ListDetailScreen() {
               </Text>
               {item.due_date && <Text style={{ fontSize: 12, color: colors.textSecondary }}>Due: {item.due_date}</Text>}
             </View>
-          )}
 
-          {editMode === 1 && !isEditing && (
-            <>
-              <TouchableOpacity 
-                onPress={() => {
-                  setSelectedTaskForSubtask(item);
-                  setIsInputVisible(true);
-                }} 
-                style={styles.actionIcon}
-              >
-                <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
-              </TouchableOpacity>
+            {editMode === 1 && (
+              <>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setSelectedTaskForSubtask(item);
+                    setIsInputVisible(true);
+                  }} 
+                  style={styles.actionIcon}
+                >
+                  <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => handleEditTask(item)} 
-                style={styles.actionIcon}
-              >
-                <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => handleEditTask(item)} 
+                  style={styles.actionIcon}
+                >
+                  <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => handleDeleteTask(item)} 
-                style={styles.actionIcon}
-              >
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+                <TouchableOpacity 
+                  onPress={() => handleDeleteTask(item)} 
+                  style={styles.actionIcon}
+                >
+                  <Ionicons name="trash-outline" size={20} color={colors.error} />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </Swipeable>
 
         {currentSubTasks.map((subTask) => {
-          const isEditingSubTask = editingSubTaskId === subTask.id;
           return (
             <View key={subTask.id} style={[styles.subTaskRow, { borderLeftColor: colors.connector }]}>
               <TouchableOpacity onPress={() => handleToggleSubTask(subTask)} style={styles.checkbox}>
@@ -435,50 +332,17 @@ export default function ListDetailScreen() {
                 />
               </TouchableOpacity>
               
-              {isEditingSubTask ? (
-                <View style={styles.editContainer}>
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
-                    value={editingSubTaskTitle}
-                    onChangeText={setEditingSubTaskTitle}
-                    placeholder="Tytuł podzadania"
-                    autoFocus
-                  />
-                  <View style={styles.editRow}>
-                    <TextInput
-                      style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
-                      value={editingSubTaskDueDate}
-                      onChangeText={handleSubTaskDueDateChange}
-                      placeholder="DD-MM-YYYY"
-                      keyboardType="numeric"
-                      maxLength={10}
-                    />
-                    <TouchableOpacity 
-                      onPress={() => setEditingSubTaskPriority(editingSubTaskPriority === 'normal' ? 'high' : 'normal')}
-                      style={[styles.priorityToggle, { backgroundColor: editingSubTaskPriority === 'high' ? colors.error : colors.surfaceVariant }]}
-                    >
-                      <Text style={{ color: editingSubTaskPriority === 'high' ? colors.onError : colors.text, fontSize: 12 }}>
-                        {editingSubTaskPriority === 'high' ? 'High' : 'Normal'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleSaveSubTaskEdit(subTask.id)} style={{ marginLeft: 8 }}>
-                      <Ionicons name="checkmark-circle" size={24} color={colors.success} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <View style={{ flex: 1 }}>
-                  <Text 
-                    style={[styles.subTaskTitle, { color: subTask.priority === 'high' ? colors.error : colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                    onLongPress={() => { handleEditSubTask(subTask); }}
-                  >
-                    {subTask.title}
-                  </Text>
-                  {subTask.due_date && <Text style={{ fontSize: 10, color: colors.textSecondary }}>Due: {subTask.due_date}</Text>}
-                </View>
-              )}
+              <View style={{ flex: 1 }}>
+                <Text 
+                  style={[styles.subTaskTitle, { color: subTask.priority === 'high' ? colors.error : colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
+                  onLongPress={() => { handleEditSubTask(subTask); }}
+                >
+                  {subTask.title}
+                </Text>
+                {subTask.due_date && <Text style={{ fontSize: 10, color: colors.textSecondary }}>Due: {subTask.due_date}</Text>}
+              </View>
 
-              {editMode === 1 && !isEditingSubTask && (
+              {editMode === 1 && (
                 <>
                   <TouchableOpacity 
                     onPress={() => handleEditSubTask(subTask)} 
@@ -596,88 +460,23 @@ export default function ListDetailScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* --- SWIPEABLE BOTTOM SHEET MODAL (ZASTĘPUJE STARE MODAL) --- */}
-      <Modal
-        visible={isActivityFeedVisible}
-        transparent={true}
-        animationType="fade" 
-        onRequestClose={() => setIsActivityFeedVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          {/* Tło do zamykania przy kliknięciu poza okienkiem */}
-          <TouchableOpacity 
-            style={StyleSheet.absoluteFill} 
-            activeOpacity={1} 
-            onPress={() => setIsActivityFeedVisible(false)} 
-          />
-          
-          <Animated.View 
-            style={[
-              styles.modalSheet, 
-              { backgroundColor: colors.surface, transform: [{ translateY: panY }] }
-            ]}
-          >
-            {/* Strefa dragowania obsługująca gesty PanResponder */}
-            <View {...panResponder.panHandlers} style={styles.modalHeaderDragArea}>
-              <View style={[styles.dragIndicator, { backgroundColor: colors.outlineVariant }]} />
-              <Text style={[styles.modalTitleText, { color: colors.text }]}>Aktywność</Text>
-            </View>
-
-            <ScrollView 
-              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
-              showsVerticalScrollIndicator={false}
-              bounces={false} 
-            >
-              {activityLogs.length === 0 ? (
-                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 40 }}>Brak aktywności na tej liście.</Text>
-              ) : (
-                activityLogs.map((log, index) => {
-                  let actionText = '';
-                  let iconName: any = 'ellipse-outline';
-                  let iconColor: string = colors.primary;
-
-                  if (log.actionType === 'CREATE') { actionText = 'dodał(a)'; iconName = 'add-circle'; iconColor = colors.success as string; }
-                  else if (log.actionType === 'UPDATE') { actionText = 'zmodyfikował(a)'; iconName = 'pencil'; iconColor = colors.warning as string; }
-                  else if (log.actionType === 'DELETE') { actionText = 'usunął(a)'; iconName = 'trash'; iconColor = colors.error as string; }
-                  else if (log.actionType === 'COMPLETE') { actionText = 'ukończył(a)'; iconName = 'checkmark-circle'; iconColor = colors.primary as string; }
-
-                  let entityText = '';
-                  if (log.entityType === 'LIST') entityText = 'listę';
-                  else if (log.entityType === 'TASK') entityText = 'zadanie';
-                  else if (log.entityType === 'SUBTASK') entityText = 'podzadanie';
-
-                  const dateObj = new Date(log.timestamp);
-                  const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const dateString = dateObj.toLocaleDateString();
-
-                  return (
-                    <View key={log.id} style={{ flexDirection: 'row', marginBottom: 20 }}>
-                      <View style={{ alignItems: 'center', marginRight: 16 }}>
-                        <Ionicons name={iconName} size={24} color={iconColor} />
-                        {index !== activityLogs.length - 1 && (
-                          <View style={{ width: 2, flex: 1, backgroundColor: colors.surfaceVariant, marginTop: 4 }} />
-                        )}
-                      </View>
-
-                      <View style={{ flex: 1, paddingBottom: 8 }}>
-                        <Text style={{ color: colors.text, fontSize: 15 }}>
-                          <Text style={{ fontWeight: 'bold' }}>{log.authorName}</Text> {actionText} {entityText}:
-                        </Text>
-                        <Text style={{ color: colors.text, fontSize: 16, fontStyle: 'italic', marginVertical: 4 }}>
-                          &quot;{log.entityName}&quot;
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                          {dateString} o {timeString}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
-            </ScrollView>
-          </Animated.View>
-        </View>
-      </Modal>
+      <ActivityModal 
+        visible={isActivityFeedVisible} 
+        onClose={() => setIsActivityFeedVisible(false)} 
+        activityLogs={activityLogs} 
+      />
+      <TaskEditModal
+        visible={!!selectedTaskToEdit}
+        onClose={() => setSelectedTaskToEdit(null)}
+        task={selectedTaskToEdit}
+        onSave={handleSaveTaskEdit}
+      />
+      <TaskEditModal
+        visible={!!selectedSubTaskToEdit}
+        onClose={() => setSelectedSubTaskToEdit(null)}
+        subTask={selectedSubTaskToEdit}
+        onSave={handleSaveSubTaskEdit}
+      />
     </View>
   );
 }
@@ -791,39 +590,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // --- Style Nowego Modala (Z Gestami) ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    height: '80%',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  modalHeaderDragArea: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 20,
-    borderTopLeftRadius: 28, 
-    borderTopRightRadius: 28,
-  },
-  dragIndicator: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
-    marginBottom: 16,
-  },
-  modalTitleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
+  
   swipeActionContainer: {
     justifyContent: 'center',
     alignItems: 'center',

@@ -23,11 +23,7 @@ export default function ProfileScreen() {
     lastName: ''
   });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+    const fetchProfile = async () => {
     try {
       let token = await SecureStore.getItemAsync('accessToken');
       if (!token) return;
@@ -57,6 +53,12 @@ export default function ProfileScreen() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);

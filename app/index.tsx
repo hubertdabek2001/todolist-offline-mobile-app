@@ -21,10 +21,6 @@ export default function EntryScreen() {
   const [jwtToken, setJwtToken] = useState('');
   const [refreshTokenState, setRefreshTokenState] = useState('');
 
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
   const checkLoginStatus = async () => {
     const token = await SecureStore.getItemAsync('accessToken');
     if (token) {
@@ -33,6 +29,13 @@ export default function EntryScreen() {
       setStep('WELCOME');
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkLoginStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const handleLoginSuccess = async (accessToken: string, refreshToken: string, requiresSetup: boolean) => {
     if (requiresSetup) {

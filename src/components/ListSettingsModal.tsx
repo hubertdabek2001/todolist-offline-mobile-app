@@ -1,9 +1,8 @@
-// src/components/ListSettingsModal.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, PanResponder, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TodoList, updateListDetails } from '../database/repositories';
+import BottomSheetModal from './BottomSheetModal';
 import { useAppTheme } from './ThemeProvider';
 
 const PREDEFINED_COLORS = [
@@ -35,7 +34,6 @@ interface ListSettingsModalProps {
 
 export default function ListSettingsModal({ visible, onClose, list, onSave }: ListSettingsModalProps) {
   const { colors } = useAppTheme();
-  const insets = useSafeAreaInsets();
   
   const [listName, setListName] = useState('');
   const [listColor, setListColor] = useState('#ffffff');
@@ -43,44 +41,15 @@ export default function ListSettingsModal({ visible, onClose, list, onSave }: Li
   const [icon, setIcon] = useState('briefcase-outline');
   const [isSaving, setIsSaving] = useState(false);
 
-  const panYRef = useRef(new Animated.Value(0));
-
   useEffect(() => {
     if (visible && list) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setListName(list.name);
-       
       setListColor(list.primary_color || '#ffffff');
-       
       setDueDate(list.due_date || '');
-       
       setIcon(list.icon || 'briefcase-outline');
-      panYRef.current.setValue(0);
     }
   }, [visible, list]);
-
-  const panResponderRef = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          panYRef.current.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 150 || gestureState.vy > 1.5) {
-          onClose();
-        } else {
-          Animated.spring(panYRef.current, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 4,
-          }).start();
-        }
-      },
-    })
-  );
 
   const handleSave = async () => {
     if (!list || listName.trim() === '') return;
@@ -114,137 +83,80 @@ export default function ListSettingsModal({ visible, onClose, list, onSave }: Li
   if (!list) return null;
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <TouchableOpacity 
-          style={StyleSheet.absoluteFill} 
-          activeOpacity={1} 
-          onPress={onClose} 
+    <BottomSheetModal visible={visible} onClose={onClose} title="Ustawienia listy">
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false} 
+      >
+        <Text style={[styles.label, { color: colors.text }]}>Nazwa listy</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.background, borderColor: colors.outlineVariant, color: colors.text }]}
+          value={listName}
+          onChangeText={setListName}
+          placeholder="Wpisz nazwę..."
+          placeholderTextColor={colors.textSecondary}
         />
-        
-        <Animated.View 
-          style={[
-            styles.modalSheet, 
-            { backgroundColor: colors.surface, paddingBottom: Math.max(24, insets.bottom), transform: [{ translateY: panYRef.current }] }
-          ]}
-        >
-          <View {...panResponderRef.current.panHandlers} style={styles.modalHeaderDragArea}>
-            <View style={[styles.dragIndicator, { backgroundColor: colors.outlineVariant }]} />
-            <Text style={[styles.modalTitleText, { color: colors.text }]}>Ustawienia listy</Text>
-          </View>
 
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces={false} 
-          >
-            <Text style={[styles.label, { color: colors.text }]}>Nazwa listy</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.outlineVariant, color: colors.text }]}
-              value={listName}
-              onChangeText={setListName}
-              placeholder="Wpisz nazwę..."
-              placeholderTextColor={colors.textSecondary}
+        <Text style={[styles.label, { color: colors.text }]}>Termin (DD-MM-YYYY)</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.background, borderColor: colors.outlineVariant, color: colors.text }]}
+          value={dueDate}
+          onChangeText={(text) => setDueDate(formatDateInput(text))}
+          placeholder="Opcjonalnie..."
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="numeric"
+          maxLength={10}
+        />
+
+        <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Kolor listy</Text>
+        <View style={styles.colorsContainer}>
+          {PREDEFINED_COLORS.map(c => (
+            <TouchableOpacity
+              key={c}
+              style={[
+                styles.colorCircle,
+                { backgroundColor: c },
+                listColor === c && styles.selectedColorCircle,
+                listColor === c && { borderColor: colors.primary }
+              ]}
+              onPress={() => setListColor(c)}
             />
+          ))}
+        </View>
 
-            <Text style={[styles.label, { color: colors.text }]}>Termin (DD-MM-YYYY)</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.outlineVariant, color: colors.text }]}
-              value={dueDate}
-              onChangeText={(text) => setDueDate(formatDateInput(text))}
-              placeholder="Opcjonalnie..."
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="numeric"
-              maxLength={10}
-            />
-
-            <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Kolor listy</Text>
-            <View style={styles.colorsContainer}>
-              {PREDEFINED_COLORS.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[
-                    styles.colorCircle,
-                    { backgroundColor: c },
-                    listColor === c && styles.selectedColorCircle,
-                    listColor === c && { borderColor: colors.primary }
-                  ]}
-                  onPress={() => setListColor(c)}
-                />
-              ))}
-            </View>
-
-            <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Ikona listy</Text>
-            <View style={styles.colorsContainer}>
-              {PREDEFINED_ICONS.map(i => (
-                <TouchableOpacity
-                  key={i}
-                  style={[
-                    styles.iconCircle,
-                    { backgroundColor: colors.background },
-                    icon === i && styles.selectedColorCircle,
-                    icon === i && { borderColor: colors.primary }
-                  ]}
-                  onPress={() => setIcon(i)}
-                >
-                  <Ionicons name={i as any} size={24} color={icon === i ? colors.primary : colors.text} />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.saveButton, { backgroundColor: colors.primary, marginTop: 20 }]} 
-              onPress={handleSave}
-              disabled={isSaving}
+        <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Ikona listy</Text>
+        <View style={styles.colorsContainer}>
+          {PREDEFINED_ICONS.map(i => (
+            <TouchableOpacity
+              key={i}
+              style={[
+                styles.iconCircle,
+                { backgroundColor: colors.background },
+                icon === i && styles.selectedColorCircle,
+                icon === i && { borderColor: colors.primary }
+              ]}
+              onPress={() => setIcon(i)}
             >
-              <Ionicons name="save-outline" size={20} color={colors.onPrimary} />
-              <Text style={[styles.saveButtonText, { color: colors.onPrimary }]}>Zapisz zmiany</Text>
+              <Ionicons name={i as any} size={24} color={icon === i ? colors.primary : colors.text} />
             </TouchableOpacity>
-          </ScrollView>
-        </Animated.View>
-      </View>
-    </Modal>
+          ))}
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.saveButton, { backgroundColor: colors.primary, marginTop: 20 }]} 
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          <Ionicons name="save-outline" size={20} color={colors.onPrimary} />
+          <Text style={[styles.saveButtonText, { color: colors.onPrimary }]}>Zapisz zmiany</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    height: '80%',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  modalHeaderDragArea: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 20,
-    borderTopLeftRadius: 28, 
-    borderTopRightRadius: 28,
-  },
-  dragIndicator: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
-    marginBottom: 16,
-  },
-  modalTitleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
   scrollContent: {
     paddingHorizontal: 24,
     paddingBottom: 40,

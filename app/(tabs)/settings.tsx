@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components */
 // app/(tabs)/settings.tsx
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
