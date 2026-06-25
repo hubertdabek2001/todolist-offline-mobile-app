@@ -1,6 +1,6 @@
 // src/services/syncService.ts
 import * as SecureStore from 'expo-secure-store';
-import * as SQLite from 'expo-sqlite';
+import { getDatabase } from '../database/database';
 import { applyPulledData } from '../database/repositories';
 import { API_URL, fetchSyncPull, refreshAccessToken } from '../utils/api';
 
@@ -21,7 +21,7 @@ export async function performSync() {
     }
 
     console.log("[SYNC] Rozpoczynam pakowanie danych z SQLite...");
-    const db = await SQLite.openDatabaseAsync('todolist.db');
+    const db = getDatabase();
 
     // 3. Zrzut wszystkich tabel z bazy SQLite
     const lists = await db.getAllAsync<any>('SELECT * FROM todo_lists');
