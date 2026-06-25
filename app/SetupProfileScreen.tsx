@@ -1,67 +1,188 @@
+// app/SetupProfileScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '../src/components/ThemeProvider';
 import { API_URL } from '../src/utils/api';
 
-export default function SetupProfileScreen({ token, onSuccess }: { token: string, onSuccess: () => void }) {
+interface SetupProfileScreenProps {
+  token: string;
+  onSuccess: () => void;
+}
+
+export default function SetupProfileScreen({ token, onSuccess }: SetupProfileScreenProps) {
+  const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
+
   const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async () => {
-    if (username.trim().length < 3) {
-      Alert.alert("Błąd", "Nazwa musi mieć minimum 3 znaki.");
+  const handleSave = async () => {
+    const trimmedUsername = username.trim();
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+
+    // --- REGUŁY WALIDACJI ---
+    
+    // 1. Minimum jedno: Imię lub Nick musi zostać podane
+    if (!trimmedUsername && !trimmedFirstName) {
+      Alert.alert(
+        "Brak danych", 
+        "Abyśmy wiedzieli jak się do Ciebie zwracać, musisz podać nazwę użytkownika (nick) lub swoje imię."
+      );
       return;
     }
-    
+
+    // 2. Jeśli podano nazwisko, imię jest bezwzględnie wymagane
+    if (trimmedLastName && !trimmedFirstName) {
+      Alert.alert(
+        "Brak imienia", 
+        "Skoro podajesz nazwisko, pole Imię również staje się obowiązkowe."
+      );
+      return;
+    }
+
     setIsLoading(true);
+
     try {
-      const response = await fetch(`${API_URL}/auth/setup-profile`, {
-        method: 'POST',
+      // Używamy naszego endpointu z Fazy Profilu, aby nadpisać nowo utworzone konto
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ username: username.trim() }),
+        body: JSON.stringify({
+          username: trimmedUsername,
+          firstName: trimmedFirstName,
+          lastName: trimmedLastName
+        })
       });
 
       if (response.ok) {
         onSuccess();
       } else {
-        Alert.alert("Błąd", "Ta nazwa użytkownika jest już zajęta.");
+        const data = await response.json();
+        Alert.alert("Błąd", data.error || "Wystąpił problem z zapisem danych.");
       }
-    } catch (e) {
-      Alert.alert("Błąd połączenia", "Nie można połączyć się z serwerem.");
+    } catch (error) {
+      Alert.alert("Błąd połączenia", "Sprawdź swoje połączenie internetowe i spróbuj ponownie.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Ionicons name="person-circle" size={80} color="#006196" style={{ alignSelf: 'center', marginBottom: 20 }} />
-      <Text style={styles.title}>Ostatni krok!</Text>
-      <Text style={styles.subtitle}>Jak mamy się do Ciebie zwracać?</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Nazwa użytkownika"
-        value={username}
-        onChangeText={setUsername}
-        autoFocus={true}
-      />
-      
-      <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={isLoading}>
-        {isLoading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Zapisz profil</Text>}
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 40 }]}>
+        
+        <View style={styles.header}>
+          <View style={[styles.iconBox, { backgroundColor: colors.primaryContainer }]}>
+            <Ionicons name="person-add" size={32} color={colors.primary} />
+          </View>
+          <Text style={[styles.title, { color: colors.text }]}>Witaj w aplikacji!</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Dokończ konfigurację swojego profilu, by móc łatwo współpracować z innymi.
+          </Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          
+          {/* Nazwa użytkownika */}
+          <Text style={[styles.label, { color: colors.textSecondary }]}>
+            Nazwa Użytkownika <Text style={{fontWeight: 'normal', fontSize: 11}}>(Opcjonalnie, jeśli podasz imię)</Text>
+          </Text>
+          <View style={[styles.inputWrapper, { backgroundColor: colors.background }]}>
+            <Ionicons name="at" size={20} color={colors.textSecondary} style={styles.icon} />
+            <TextInput 
+              style={[styles.input, { color: colors.text }]}
+              placeholder="np. szalony_kaktus"
+              placeholderTextColor={colors.outlineVariant}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* Imię */}
+          <Text style={[styles.label, { color: colors.textSecondary }]}>
+            Imię <Text style={{fontWeight: 'normal', fontSize: 11}}>(Wymagane z nazwiskiem)</Text>
+          </Text>
+          <View style={[styles.inputWrapper, { backgroundColor: colors.background }]}>
+            <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.icon} />
+            <TextInput 
+              style={[styles.input, { color: colors.text }]}
+              placeholder="Jan"
+              placeholderTextColor={colors.outlineVariant}
+              value={firstName}
+              onChangeText={setFirstName}
+            />
+          </View>
+
+          {/* Nazwisko */}
+          <Text style={[styles.label, { color: colors.textSecondary }]}>
+            Nazwisko <Text style={{fontWeight: 'normal', fontSize: 11}}>(Opcjonalnie)</Text>
+          </Text>
+          <View style={[styles.inputWrapper, { backgroundColor: colors.background }]}>
+            <Ionicons name="people-outline" size={20} color={colors.textSecondary} style={styles.icon} />
+            <TextInput 
+              style={[styles.input, { color: colors.text }]}
+              placeholder="Kowalski"
+              placeholderTextColor={colors.outlineVariant}
+              value={lastName}
+              onChangeText={setLastName}
+              onSubmitEditing={handleSave} // Kliknięcie enter na klawiaturze zapisuje form
+            />
+          </View>
+
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.saveButton, { backgroundColor: colors.primary }]} 
+          onPress={handleSave} 
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={colors.onPrimary} />
+          ) : (
+            <Text style={[styles.saveButtonText, { color: colors.onPrimary }]}>Rozpocznij korzystanie</Text>
+          )}
+        </TouchableOpacity>
+
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f9fb', padding: 24, justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: '#191c1e' },
-  subtitle: { fontSize: 14, color: '#3f4850', textAlign: 'center', marginBottom: 30 },
-  input: { backgroundColor: 'white', height: 56, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20 },
-  button: { backgroundColor: '#006196', height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' }
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
+  header: { alignItems: 'center', marginBottom: 40 },
+  iconBox: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+  subtitle: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  card: { padding: 20, borderRadius: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2, marginBottom: 30 },
+  label: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 16, marginBottom: 20, height: 56 },
+  icon: { marginRight: 12 },
+  input: { flex: 1, fontSize: 16 },
+  saveButton: { height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  saveButtonText: { fontSize: 16, fontWeight: 'bold' }
 });
