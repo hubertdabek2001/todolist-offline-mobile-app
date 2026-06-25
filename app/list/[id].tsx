@@ -824,5 +824,20 @@ const styles = StyleSheet.create({
   modalTitleText: {
     fontSize: 20,
     fontWeight: 'bold',
-  }
+  },
+  swipeActionContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
+  swipeActionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swipeActionText: {
+    fontSize: 10,
+    marginTop: 4,
+    fontWeight: 'bold',
+  },
 });
