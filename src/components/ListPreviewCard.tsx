@@ -4,8 +4,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getTasksByList, Task } from '../database/repositories';
-import { fetchListCollaborators } from '../utils/api'; // DODANY IMPORT
+import { fetchListCollaborators, API_URL, refreshAccessToken } from '../utils/api'; // DODANY IMPORT
 import { useAppTheme } from './ThemeProvider';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 export const CARD_WIDTH = width * 0.85; 
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarBackground: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 3,
   },
   progressBarFill: {

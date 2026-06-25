@@ -20,7 +20,17 @@ export default function ArchivedListsScreen() {
   };
 
   useEffect(() => {
-    loadArchived();
+    let isActive = true;
+    const fetchLists = async () => {
+      setIsLoading(true);
+      const lists = await fetchArchivedListsAPI();
+      if (isActive) {
+        setArchivedLists(lists || []);
+        setIsLoading(false);
+      }
+    };
+    fetchLists();
+    return () => { isActive = false; };
   }, []);
 
   const handleRestore = async (id: string, name: string) => {
