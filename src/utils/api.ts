@@ -93,3 +93,32 @@ export const fetchSyncPull = async () => {
     return null;
   }
 };
+
+export const fetchListCollaborators = async (listId: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return [];
+
+  try {
+    let response = await fetch(`${API_URL}/lists/${listId}/collaborators`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return [];
+      response = await fetch(`${API_URL}/lists/${listId}/collaborators`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    if (response.ok) {
+      return await response.json(); // Zwraca tablicę: [{ id: "...", initial: "A" }, ...]
+    }
+    return [];
+  } catch (e) {
+    console.error("[API] Błąd pobierania współpracowników:", e);
+    return [];
+  }
+};

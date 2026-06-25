@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getTasksByList, Task } from '../database/repositories';
+import { fetchListCollaborators } from '../utils/api'; // DODANY IMPORT
 import { useAppTheme } from './ThemeProvider';
 
 const { width } = Dimensions.get('window');
@@ -11,27 +12,38 @@ export const CARD_WIDTH = width * 0.85;
 export const CARD_MARGIN = 8;
 export const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN * 2;
 
+// Dodano is_shared do Propsów
 interface ListPreviewCardProps {
-  list: { id: string; name: string; primary_color?: string | null; priority?: string; due_date?: string | null; icon?: string | null };
+  list: { id: string; name: string; primary_color?: string | null; priority?: string; due_date?: string | null; icon?: string | null; is_shared?: number };
   onPress: () => void;
   onLongPress?: () => void;
 }
 
 export default function ListPreviewCard({ list, onPress, onLongPress }: ListPreviewCardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [collaborators, setCollaborators] = useState<{id: string, initial: string}[]>([]); // STAN WSPÓŁPRACOWNIKÓW
   const { colors, theme } = useAppTheme();
 
   useFocusEffect(
     useCallback(() => {
+      // Pobieranie zadań
       getTasksByList(list.id).then(setTasks);
-    }, [list.id])
+
+      // Pobieranie współpracowników TYLKO jeśli lista jest udostępniona (lub dla pewności przy braku flagi)
+      if (list.is_shared === 1 || list.is_shared === undefined) {
+        fetchListCollaborators(list.id).then((users) => {
+          if (users && users.length > 0) {
+            setCollaborators(users);
+          }
+        });
+      }
+    }, [list.id, list.is_shared])
   );
 
   const cardColor = list.primary_color && list.primary_color !== '#ffffff' 
     ? list.primary_color 
     : colors.surface;
 
-  // Assuming an arbitrary icon logic, default to brief-case
   const defaultIcon = list.icon ? list.icon as any : (list.name.toLowerCase().includes('zakup') ? 'cart-outline' : 'briefcase-outline');
 
   const completedCount = tasks.filter(t => t.is_completed).length;
@@ -53,8 +65,31 @@ export default function ListPreviewCard({ list, onPress, onLongPress }: ListPrev
     >
       <View style={styles.innerContainer}>
         <View style={styles.headerSection}>
-          <View backgroundColor={colors.secondary} style={styles.iconContainer} >
-            <Ionicons name={defaultIcon} size={28} color={colors.onPrimary} />
+          {/* GÓRNY PASEK: Ikona (Lewo) i Awatary (Prawo) */}
+          <View style={styles.topRow}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.secondary }]} >
+              <Ionicons name={defaultIcon} size={28} color={colors.onPrimary} />
+            </View>
+
+            {/* ZACHODZĄCE NA SIEBIE AWATARY */}
+            {collaborators.length > 1 && (
+              <View style={styles.collaboratorsWrapper}>
+                {collaborators.slice(0, 3).map((collab, index) => (
+                  <View 
+                    key={collab.id} 
+                    style={[styles.avatarCircle, { backgroundColor: colors.primary, borderColor: cardColor, zIndex: 10 - index }]}
+                  >
+                    <Text style={[styles.avatarText, { color: colors.onPrimary }]}>{collab.initial}</Text>
+                  </View>
+                ))}
+                {/* Jeśli jest więcej niż 3 osoby, pokazujemy "+X" */}
+                {collaborators.length > 3 && (
+                  <View style={[styles.avatarCircle, { backgroundColor: colors.surfaceVariant, borderColor: cardColor, zIndex: 0 }]}>
+                    <Text style={[styles.avatarText, { color: colors.textSecondary }]}>+{collaborators.length - 3}</Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.textContainer}>
@@ -119,7 +154,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
-    height: 360,
+    flex: 1,
+    minHeight: 100, 
+    marginBottom: 12, 
   },
   innerContainer: {
     flex: 1,
@@ -129,15 +166,39 @@ const styles = StyleSheet.create({
   headerSection: {
     marginBottom: 16,
   },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: 'colors.secondary',
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
+  // --- STYLE DLA AWATARÓW ---
+  collaboratorsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  avatarCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: -8, // Ujemny margines sprawia, że kółka na siebie zachodzą!
+    borderWidth: 2,
+  },
+  avatarText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  // -------------------------
   textContainer: {
     justifyContent: 'center',
   },
@@ -172,43 +233,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarBackground: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     borderRadius: 3,
   },
   progressBarFill: {
     height: '100%',
     borderRadius: 3,
   },
-  card: {
-    // 1. ZARZĄDZANIE WYSOKOŚCIĄ
-    minHeight: 100, // Zmniejsz wartość (np. z 120 lub 140 na 100), by karty były niższe
-    // maxHeight: 150, // Opcjonalnie: zablokuj maksymalną wysokość, by tekst jej nie rozpychał za bardzo
-    
-    // 2. ZARZĄDZANIE MARGINESAMI I ODSTĘPAMI (Wielkość "wewnątrz" karty)
-    paddingVertical: 16,   // Pionowy odstęp w środku
-    paddingHorizontal: 20, // Poziomy odstęp w środku
-    marginBottom: 12,      // Odstęp między kolejnymi kartami
-    
-    // 3. WYGLĄD
-    borderRadius: 16,      // Mniejsze lub większe zaokrąglenie rogów
-    justifyContent: 'space-between',
-    
-    // Cienie (dla zachowania głębi)
-    elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  
-  // Jeśli podgląd zadań w karcie zajmuje za dużo miejsca, zmniejsz czcionkę:
-  previewText: {
-    fontSize: 13, // Mniejsza czcionka dla zadań w podglądzie
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  
-  title: {
-    fontSize: 18, // Zmiana rozmiaru tytułu listy
-    fontWeight: '700',
-  }
 });
