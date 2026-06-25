@@ -1,12 +1,14 @@
 // app/list/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   FlatList,
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,6 +17,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import {
@@ -63,6 +66,73 @@ export default function ListDetailScreen() {
 
   const router = useRouter();
 
+  const formatDateInput = (text: string) => {
+    // Remove all non-numeric characters
+    const numericText = text.replace(/\D/g, '');
+    
+    // Add dashes for DD-MM-YYYY format
+    let formattedText = numericText;
+    if (numericText.length > 2 && numericText.length <= 4) {
+      formattedText = `${numericText.slice(0, 2)}-${numericText.slice(2)}`;
+    } else if (numericText.length > 4) {
+      formattedText = `${numericText.slice(0, 2)}-${numericText.slice(2, 4)}-${numericText.slice(4, 8)}`;
+    }
+    
+    return formattedText;
+  };
+
+  const handleTaskDueDateChange = (text: string) => {
+    setEditingTaskDueDate(formatDateInput(text));
+  };
+
+  const handleSubTaskDueDateChange = (text: string) => {
+    setEditingSubTaskDueDate(formatDateInput(text));
+  };
+  // --- LOGIKA GESTU (PRZECIĄGNIJ, BY ZAMKNĄĆ MODAL) ---
+  const panY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isActivityFeedVisible) {
+      panY.setValue(0);
+    }
+  }, [isActivityFeedVisible]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150 || gestureState.vy > 1.5) {
+          setIsActivityFeedVisible(false);
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 4,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // --- LOKALNE LOGOWANIE AKTYWNOŚCI ---
+  const addLocalLog = (action: 'CREATE' | 'UPDATE' | 'DELETE' | 'COMPLETE', entityType: 'LIST' | 'TASK' | 'SUBTASK', entityName: string) => {
+    const newLog = {
+      id: Math.random().toString(), // Tymczasowe ID
+      actionType: action,
+      entityType: entityType,
+      entityName: entityName,
+      timestamp: new Date().toISOString(),
+      authorName: "Ty" // Od razu widać, że to Twoja akcja
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
   const loadData = useCallback(async () => {
     if (!id) return;
     const { getListById } = await import('../../src/database/repositories');
@@ -76,7 +146,6 @@ export default function ListDetailScreen() {
 
     // --- UKRYTE SORTOWANIE ---
     const sortedTasks = fetchedTasks.sort((a, b) => {
-      // Reguła 1: Ukończone zadania (is_completed === 1 / true) zawsze lądują na samym dole
       const isCompletedA = a.is_completed ? 1 : 0;
       const isCompletedB = b.is_completed ? 1 : 0;
       
@@ -84,12 +153,9 @@ export default function ListDetailScreen() {
         return isCompletedA - isCompletedB; 
       }
 
-      // Reguła 2: Jeśli oba są nieukończone (lub oba ukończone), patrzymy na priorytet.
-      // 'high' dostaje wagę 1, reszta (np. 'normal', null) wagę 0.
       const priorityA = a.priority === 'high' ? 1 : 0;
       const priorityB = b.priority === 'high' ? 1 : 0;
 
-      // Zwracamy różnicę tak, aby wyższa waga (1) była na początku listy
       return priorityB - priorityA;
     });
 
@@ -112,43 +178,44 @@ export default function ListDetailScreen() {
   // JEDEN POPRAWNY USE_EFFECT DLA WEBSOCKETA
   useEffect(() => {
     if (latestActivity) {
-      // 1. Dodajemy do osi czasu na żywo (bez odpytywania serwera)
       const newLog = {
         id: latestActivity.id,
         actionType: latestActivity.actionType,
         entityType: latestActivity.entityType,
         entityName: latestActivity.entityName,
         timestamp: new Date().toISOString(),
-        authorName: "Ktoś" // Zostanie zaktualizowane przy pull'u z bazy
+        authorName: "Ktoś" 
       };
       
       setActivityLogs(prev => [newLog, ...prev]);
       
-      // 2. Jeśli panel jest zamknięty, informujemy użytkownika małym powiadomieniem
       if (!isActivityFeedVisible) {
          Alert.alert("Aktualizacja", `Pojawiła się nowa aktywność ("${latestActivity.entityName}"). Sprawdź oś czasu!`);
       }
-
-      // TODO w Fazie 5: Tutaj wywołamy funkcję PULL, która automatycznie
-      // dociągnie to nowe zadanie z serwera i zaktualizuje lokalne SQLite!
+      setTimeout(() => {
+        setActivityLogs(prev => [newLog, ...prev]);
+      }, 0);
     }
-  }, [latestActivity]); // Usunięto drugi useEffect
+  }, [latestActivity, isActivityFeedVisible]);
 
   const handleAddItem = async () => {
     if (inputText.trim() === '' || !id || isSubmitting) return;
 
     setIsSubmitting(true);
+    const title = inputText.trim();
 
     try {
       if (selectedTaskForSubtask) {
-        await createSubTask(selectedTaskForSubtask.id, inputText.trim());
+        await createSubTask(selectedTaskForSubtask.id, title);
+        addLocalLog('CREATE', 'SUBTASK', title); // LOKALNY LOG
         setSelectedTaskForSubtask(null);
       } else {
-        await createTask(id, inputText.trim());
+        await createTask(id, title);
+        addLocalLog('CREATE', 'TASK', title); // LOKALNY LOG
       }
       
       setInputText('');
-      setIsInputVisible(false); // Zamknięcie po dodaniu
+      setIsInputVisible(false);
       await loadData();
     } catch (e) {
       console.error("Błąd podczas dodawania:", e);
@@ -158,12 +225,16 @@ export default function ListDetailScreen() {
   };
 
   const handleToggleTask = async (task: Task) => {
+    const newStatus = task.is_completed ? 0 : 1;
     await toggleTaskStatus(task.id, task.is_completed);
+    addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'TASK', task.title); // LOKALNY LOG
     await loadData();
   };
 
   const handleToggleSubTask = async (subTask: SubTask) => {
+    const newStatus = subTask.is_completed ? 0 : 1;
     await toggleSubTaskStatus(subTask.id, subTask.is_completed);
+    addLocalLog(newStatus === 1 ? 'COMPLETE' : 'SUBTASK', subTask.title); // LOKALNY LOG
     await loadData();
   };
 
@@ -178,6 +249,7 @@ export default function ListDetailScreen() {
           style: "destructive",
           onPress: async () => {
             await deleteTask(task.id);
+            addLocalLog('DELETE', 'TASK', task.title); // LOKALNY LOG
             await loadData();
           }
         }
@@ -196,6 +268,7 @@ export default function ListDetailScreen() {
           style: "destructive",
           onPress: async () => {
             await deleteSubTask(subTask.id);
+            addLocalLog('DELETE', 'SUBTASK', subTask.title); // LOKALNY LOG
             await loadData();
           }
         }
@@ -214,6 +287,7 @@ export default function ListDetailScreen() {
     if (editingTaskTitle.trim() === '') return;
     const { updateTaskDetails } = await import('../../src/database/repositories');
     await updateTaskDetails(taskId, editingTaskTitle.trim(), editingTaskPriority, editingTaskDueDate || null);
+    addLocalLog('UPDATE', 'TASK', editingTaskTitle.trim()); // LOKALNY LOG
     setEditingTaskId(null);
     await loadData();
   };
@@ -229,6 +303,7 @@ export default function ListDetailScreen() {
     if (editingSubTaskTitle.trim() === '') return;
     const { updateSubTaskDetails } = await import('../../src/database/repositories');
     await updateSubTaskDetails(subTaskId, editingSubTaskTitle.trim(), editingSubTaskPriority, editingSubTaskDueDate || null);
+    addLocalLog('UPDATE', 'SUBTASK', editingSubTaskTitle.trim()); // LOKALNY LOG
     setEditingSubTaskId(null);
     await loadData();
   };
@@ -237,9 +312,37 @@ export default function ListDetailScreen() {
     const currentSubTasks = subTasks.filter(st => st.task_id === item.id);
     const isEditing = editingTaskId === item.id;
 
+    const renderRightActions = () => (
+      <View style={styles.swipeActionContainer}>
+        <TouchableOpacity 
+          style={styles.swipeActionButton} 
+          onPress={() => setSelectedTaskForSubtask(item)}
+        >
+          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          <Text style={[styles.swipeActionText, { color: colors.primary }]}>Dodaj podzadanie</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
+    const renderLeftActions = () => (
+      <View style={[styles.swipeActionContainer, { alignItems: 'flex-start', paddingLeft: 16 }]}>
+        <TouchableOpacity 
+          style={styles.swipeActionButton} 
+          onPress={() => setSelectedTaskForSubtask(item)}
+        >
+          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+          <Text style={[styles.swipeActionText, { color: colors.primary }]}>Dodaj podzadanie</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
     return (
       <View style={[styles.taskGroupContainer, { backgroundColor: colors.surface, shadowColor: theme === 'dark' ? '#000' : '#000' }]}>
-        <View style={styles.taskRow}>
+        <Swipeable 
+          renderRightActions={renderRightActions}
+          renderLeftActions={renderLeftActions}
+        >
+          <View style={[styles.taskRow, { backgroundColor: colors.surface }]}>
           <TouchableOpacity onPress={() => handleToggleTask(item)} style={styles.checkbox}>
             <Ionicons 
               name={item.is_completed ? "checkbox" : "square-outline"} 
@@ -253,9 +356,10 @@ export default function ListDetailScreen() {
               <TextInput
                 style={[styles.editInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
                 value={editingTaskTitle}
-                onChangeText={setEditingTaskTitle}
-                placeholder="Tytuł zadania"
-                autoFocus
+                onChangeText={handleTaskDueDateChange}
+                  placeholder="DD-MM-YYYY"
+                  keyboardType="numeric"
+                  maxLength={10}
               />
               <View style={styles.editRow}>
                 <TextInput
@@ -276,12 +380,13 @@ export default function ListDetailScreen() {
                   <Ionicons name="checkmark-circle" size={24} color={colors.success} />
                 </TouchableOpacity>
               </View>
+              
             </View>
           ) : (
             <View style={{ flex: 1 }}>
               <Text 
                 style={[styles.taskTitle, { color: item.priority === 'high' ? colors.error : colors.text }, item.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                onLongPress={() => handleEditTask(item)}
+                onLongPress={() => { if (editMode === 1) handleEditTask(item); }}
               >
                 {item.title}
               </Text>
@@ -299,6 +404,13 @@ export default function ListDetailScreen() {
                 style={styles.actionIcon}
               >
                 <Ionicons name="git-branch-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={() => handleEditTask(item)} 
+                style={styles.actionIcon}
+              >
+                <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -336,8 +448,10 @@ export default function ListDetailScreen() {
                     <TextInput
                       style={[styles.editInputSmall, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.primary }]}
                       value={editingSubTaskDueDate}
-                      onChangeText={setEditingSubTaskDueDate}
-                      placeholder="YYYY-MM-DD"
+                      onChangeText={handleSubTaskDueDateChange}
+                      placeholder="DD-MM-YYYY"
+                      keyboardType="numeric"
+                      maxLength={10}
                     />
                     <TouchableOpacity 
                       onPress={() => setEditingSubTaskPriority(editingSubTaskPriority === 'normal' ? 'high' : 'normal')}
@@ -356,7 +470,7 @@ export default function ListDetailScreen() {
                 <View style={{ flex: 1 }}>
                   <Text 
                     style={[styles.subTaskTitle, { color: subTask.priority === 'high' ? colors.error : colors.textSecondary }, subTask.is_completed ? [styles.completedText, { color: colors.textSecondary }] : undefined]}
-                    onLongPress={() => handleEditSubTask(subTask)}
+                    onLongPress={() => { if (editMode === 1) handleEditSubTask(subTask); }}
                   >
                     {subTask.title}
                   </Text>
@@ -366,6 +480,13 @@ export default function ListDetailScreen() {
 
               {editMode === 1 && !isEditingSubTask && (
                 <>
+                  <TouchableOpacity 
+                    onPress={() => handleEditSubTask(subTask)} 
+                    style={styles.actionIcon}
+                  >
+                    <Ionicons name="pencil-outline" size={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
+
                   <TouchableOpacity 
                     onPress={() => handleDeleteSubTask(subTask)} 
                     style={styles.actionIcon}
@@ -378,6 +499,7 @@ export default function ListDetailScreen() {
           );
         })}
       </View>
+      </Swipeable>
     );
   };
 
@@ -386,7 +508,7 @@ export default function ListDetailScreen() {
       <Stack.Screen 
         options={{ 
           title: name || 'Lista',
-          headerShown: true,
+          headerShown: true, // ZOSTAWIONE ZGODNIE Z TWOIM PLIKIEM
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerRight: () => (
@@ -475,33 +597,38 @@ export default function ListDetailScreen() {
         </View>
       </KeyboardAvoidingView>
 
+      {/* --- SWIPEABLE BOTTOM SHEET MODAL (ZASTĘPUJE STARE MODAL) --- */}
       <Modal
         visible={isActivityFeedVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade" 
         onRequestClose={() => setIsActivityFeedVisible(false)}
       >
-        <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
-          activeOpacity={1}
-          onPress={() => setIsActivityFeedVisible(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={{ 
-              backgroundColor: colors.surface, 
-              borderTopLeftRadius: 28, 
-              borderTopRightRadius: 28, 
-              height: '75%', 
-              paddingTop: 16 
-            }}
+        <View style={styles.modalOverlay}>
+          {/* Tło do zamykania przy kliknięciu poza okienkiem */}
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFillObject} 
+            activeOpacity={1} 
+            onPress={() => setIsActivityFeedVisible(false)} 
+          />
+          
+          <Animated.View 
+            style={[
+              styles.modalSheet, 
+              { backgroundColor: colors.surface, transform: [{ translateY: panY }] }
+            ]}
           >
-            <View style={{ width: 40, height: 5, backgroundColor: colors.outlineVariant, borderRadius: 3, alignSelf: 'center', marginBottom: 16 }} />
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, textAlign: 'center', marginBottom: 20 }}>
-              Aktywność
-            </Text>
+            {/* Strefa dragowania obsługująca gesty PanResponder */}
+            <View {...panResponder.panHandlers} style={styles.modalHeaderDragArea}>
+              <View style={[styles.dragIndicator, { backgroundColor: colors.outlineVariant }]} />
+              <Text style={[styles.modalTitleText, { color: colors.text }]}>Aktywność</Text>
+            </View>
 
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+            <ScrollView 
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+              showsVerticalScrollIndicator={false}
+              bounces={false} 
+            >
               {activityLogs.length === 0 ? (
                 <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 40 }}>Brak aktywności na tej liście.</Text>
               ) : (
@@ -538,7 +665,7 @@ export default function ListDetailScreen() {
                           <Text style={{ fontWeight: 'bold' }}>{log.authorName}</Text> {actionText} {entityText}:
                         </Text>
                         <Text style={{ color: colors.text, fontSize: 16, fontStyle: 'italic', marginVertical: 4 }}>
-                          "{log.entityName}"
+                          &quot;{log.entityName}&quot;
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                           {dateString} o {timeString}
@@ -549,8 +676,8 @@ export default function ListDetailScreen() {
                 })
               )}
             </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </Animated.View>
+        </View>
       </Modal>
     </View>
   );
@@ -664,4 +791,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  // --- Style Nowego Modala (Z Gestami) ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    height: '80%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeaderDragArea: {
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderTopLeftRadius: 28, 
+    borderTopRightRadius: 28,
+  },
+  dragIndicator: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    marginBottom: 16,
+  },
+  modalTitleText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  }
 });
