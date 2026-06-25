@@ -35,7 +35,13 @@ export async function performSync() {
         name: l.name,
         isArchived: l.is_archived === 1,
         isShared: l.is_shared === 1,
-        spentTimeSeconds: l.spent_time_seconds || 0
+        spentTimeSeconds: l.spent_time_seconds || 0,
+        primaryColor: l.primary_color || '#ffffff',
+        icon: l.icon || null,
+        priority: l.priority || 'normal',
+        dueDate: l.due_date || null,
+        autoPriority: l.auto_priority === 1,
+        editMode: l.edit_mode || 0
       })),
       tasks: tasks.map(t => ({
         id: t.id,
@@ -43,7 +49,9 @@ export async function performSync() {
         title: t.title,
         description: t.description || "",
         isCompleted: t.is_completed === 1,
-        spentTimeSeconds: t.spent_time_seconds || 0
+        spentTimeSeconds: t.spent_time_seconds || 0,
+        priority: t.priority || 'normal',
+        dueDate: t.due_date || null
       })),
       subTasks: subTasks.map(st => ({
         id: st.id,
@@ -51,7 +59,9 @@ export async function performSync() {
         parentSubTaskId: st.parent_subtask_id || null,
         title: st.title,
         isCompleted: st.is_completed === 1,
-        spentTimeSeconds: st.spent_time_seconds || 0
+        spentTimeSeconds: st.spent_time_seconds || 0,
+        priority: st.priority || 'normal',
+        dueDate: st.due_date || null
       }))
     };
 
