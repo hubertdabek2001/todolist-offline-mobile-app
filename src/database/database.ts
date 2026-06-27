@@ -56,6 +56,13 @@ export async function initDatabase() {
       );
     `);
 
+    try {
+    await db.execAsync(`ALTER TABLE sub_tasks ADD COLUMN parent_sub_task_id TEXT;`);
+    console.log("[DB] Migracja: Pomyślnie dodano kolumnę 'parent_sub_task_id' do 'sub_tasks'.");
+  } catch (e) {
+    // Ignorujemy ten błąd - oznacza to, że kolumna już istnieje, więc migracja nie jest potrzebna.
+  }
+
     // --- NIEZAWODNA MIGRACJA SCHEMATU ---
     // Odpytujemy SQLite o strukturę tabeli todo_lists
     const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(todo_lists);');

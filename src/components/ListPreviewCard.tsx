@@ -1,10 +1,11 @@
 // src/components/ListPreviewCard.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getTasksByList, Task } from '../database/repositories';
-import { fetchListCollaborators } from '../utils/api'; // DODANY IMPORT
+import { API_URL, fetchListCollaborators, refreshAccessToken } from '../utils/api'; // DODANY IMPORT
 import { useAppTheme } from './ThemeProvider';
 
 const { width } = Dimensions.get('window');
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarBackground: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 3,
   },
   progressBarFill: {
