@@ -112,7 +112,7 @@ export default function SettingsScreen() {
   const handleLogin = async () => {
     await SecureStore.deleteItemAsync('accessToken');
     await SecureStore.deleteItemAsync('refreshToken');
-    router.replace('/'); 
+    router.replace('/WelcomeScreen');
   };
 
   const SettingRow = ({ icon, title, rightElement, onPress, destructive = false, isLast = false }: any) => (
