@@ -101,9 +101,9 @@ export async function performSync() {
   }
 }
 
-export const syncListsAfterLogin = async (token: string) => {
+export const performPull = async () => {
   try {
-    // 1. Pobierz listy z serwera
+    // 1. Pobierz dane z serwera
     const data = await fetchSyncPull();
     
     // 2. Zapisz je do lokalnego SQLite
@@ -113,7 +113,11 @@ export const syncListsAfterLogin = async (token: string) => {
     
     return true;
   } catch (error) {
-    console.error('Błąd podczas synchronizacji początkowej:', error);
+    console.error('[SYNC] Błąd podczas pobierania danych (PULL):', error);
     return false;
   }
+};
+
+export const syncListsAfterLogin = async (token: string) => {
+  return await performPull();
 };

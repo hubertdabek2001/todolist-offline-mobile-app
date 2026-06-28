@@ -8,6 +8,7 @@ import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreview
 import ListSettingsModal from '../../src/components/ListSettingsModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { createList, evaluateAutoPriority, getMyLists } from '../../src/database/repositories';
+import { performSync } from '../../src/services/syncService';
 
 interface TodoList {
   id: string;
@@ -56,6 +57,7 @@ export default function MyListsScreen() {
     await createList(newListName.trim());
     setNewListName('');
     await loadLists(); 
+    performSync();
   };
 
   return (
