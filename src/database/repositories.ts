@@ -246,3 +246,18 @@ export async function applyPulledData(data: any): Promise<void> {
   }
 }
 
+
+export async function clearAllLocalData() {
+  const db = getDb();
+  try {
+    await db.execAsync('PRAGMA foreign_keys = OFF;');
+    await db.execAsync('DELETE FROM sub_tasks;');
+    await db.execAsync('DELETE FROM tasks;');
+    await db.execAsync('DELETE FROM todo_lists;');
+    await db.execAsync('PRAGMA foreign_keys = ON;');
+    console.log("[DB] Pomyślnie usunięto wszystkie dane z bazy (tylko na tym urządzeniu).");
+  } catch (error) {
+    console.error("[DB] Błąd podczas usuwania wszystkich danych lokalnych:", error);
+    throw error;
+  }
+}

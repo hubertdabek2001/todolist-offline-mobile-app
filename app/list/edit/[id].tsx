@@ -6,6 +6,7 @@ import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacit
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../src/components/ThemeProvider';
 import { deleteList, evaluateAutoPriority, getListById, updateListDetails } from '../../../src/database/repositories';
+import { performSync } from '../../../src/services/syncService';
 
 const PREDEFINED_COLORS = [
   '#ffffff', // Domyślny
@@ -56,6 +57,7 @@ export default function EditListScreen() {
     if (autoPriority === 1) {
       await evaluateAutoPriority(id);
     }
+    performSync();
     setIsSaving(false);
     Alert.alert("Zapisano", "Ustawienia listy zostały zaktualizowane.", [
       { text: "OK", onPress: () => router.back() }
@@ -74,6 +76,7 @@ export default function EditListScreen() {
           onPress: async () => {
             if (id) {
               await deleteList(id);
+              performSync();
               router.replace('/');
             }
           } 
