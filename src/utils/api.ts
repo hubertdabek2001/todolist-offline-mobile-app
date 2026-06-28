@@ -5,7 +5,7 @@ console.log("=== DIAGNOSTYKA ENV ===");
 console.log("Mój plik .env ładuje API_URL jako:", process.env.EXPO_PUBLIC_API_URL);
 console.log("=======================");
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+export const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const refreshAccessToken = async (): Promise<string | null> => {
   try {
