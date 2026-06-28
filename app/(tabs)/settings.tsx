@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { AccentColors, AccentTheme } from '../../src/constants/theme';
 import { API_URL, refreshAccessToken } from '../../src/utils/api';
+import { clearAllLocalData } from '../../src/database/repositories';
 
 export default function SettingsScreen() {
   const { colors, theme, setThemePreference, accentTheme, setAccentTheme } = useAppTheme();
@@ -19,6 +20,7 @@ export default function SettingsScreen() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSyncEnabled, setIsSyncEnabled] = useState(true);
   const [isPaletteVisible, setIsPaletteVisible] = useState(false); // STAN DLA MODALA KOLORÓW
+  const [isClearDataModalVisible, setIsClearDataModalVisible] = useState(false);
   
   const [profileName, setProfileName] = useState('Ładowanie...');
   const [avatarInitial, setAvatarInitial] = useState('U');
@@ -103,6 +105,7 @@ export default function SettingsScreen() {
             await SecureStore.deleteItemAsync('accessToken');
             await SecureStore.deleteItemAsync('refreshToken');
             setIsLoggedIn(false);
+            setIsClearDataModalVisible(true);
           } 
         }
       ]
@@ -311,6 +314,53 @@ export default function SettingsScreen() {
                   </TouchableOpacity>
                 );
               })}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* --- MODAL CZYSZCZENIA DANYCH (PO WYLOGOWANIU) --- */}
+      <Modal
+        visible={isClearDataModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsClearDataModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsClearDataModalVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalContent, { backgroundColor: colors.surface, paddingBottom: insets.bottom + 24 }]}
+          >
+            <View style={styles.modalDragIndicator} />
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center' }]}>Wylogowano pomyślnie</Text>
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginBottom: 24, fontSize: 16 }}>
+              Czy chcesz usunąć wszystkie swoje dane z pamięci TEGO URZĄDZENIA? Twoje dane w chmurze pozostaną bezpieczne.
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+              <TouchableOpacity
+                style={{ flex: 1, padding: 14, borderRadius: 12, backgroundColor: colors.surfaceVariant, alignItems: 'center' }}
+                onPress={() => setIsClearDataModalVisible(false)}
+              >
+                <Text style={{ color: colors.text, fontWeight: '600' }}>Zachowaj dane</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, padding: 14, borderRadius: 12, backgroundColor: colors.error, alignItems: 'center' }}
+                onPress={async () => {
+                  try {
+                    await clearAllLocalData();
+                    setIsClearDataModalVisible(false);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Usuń dane</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
