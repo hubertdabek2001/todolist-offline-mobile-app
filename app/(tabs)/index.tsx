@@ -1,7 +1,5 @@
 // app/(tabs)/index.tsx
 import { Ionicons } from '@expo/vector-icons';
-import InvitationPreviewCard, { Invitation } from '../../src/components/InvitationPreviewCard';
-import { acceptInvitationAPI, declineInvitationAPI, fetchPendingInvitationsAPI } from '../../src/utils/api';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -28,7 +26,6 @@ interface TodoList {
 export default function MyListsScreen() {
   
   const [lists, setLists] = useState<TodoList[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   const [newListName, setNewListName] = useState('');
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -50,10 +47,6 @@ export default function MyListsScreen() {
       const updatedData = await getMyLists();
       setLists(updatedData as TodoList[]);
 
-      // Fetch invitations
-      const pendingInvitations = await fetchPendingInvitationsAPI();
-      setInvitations(pendingInvitations);
-
     } catch (error) {
       console.error("Błąd pobierania list:", error);
     }
@@ -63,23 +56,6 @@ export default function MyListsScreen() {
     useCallback(() => { loadLists(); }, [])
   );
 
-  
-  const handleAcceptInvitation = async (shareId: string) => {
-    const success = await acceptInvitationAPI(shareId);
-    if (success) {
-      performSync();
-      await loadLists();
-    }
-  };
-
-  const handleDeclineInvitation = async (shareId: string) => {
-    const success = await declineInvitationAPI(shareId);
-    if (success) {
-      await loadLists();
-    }
-  };
-
-  const carouselData = [...invitations.map(inv => ({ ...inv, type: 'invitation' })), ...lists.map(list => ({ ...list, type: 'list' }))];
 
   const handleAddList = async () => {
     if (newListName.trim() === '') return;
@@ -105,13 +81,13 @@ export default function MyListsScreen() {
 
         {/* KARUZELA LIST */}
         <View style={styles.carouselContainer}>
-          {carouselData.length === 0 ? (
+          {lists.length === 0 ? (
             <Text style={[styles.emptyGlobalText, { color: colors.textSecondary }]}>Brak list. Utwórz pierwszą listę poniżej!</Text>
           ) : (
             <FlatList
               horizontal
-              data={carouselData as any[]}
-              keyExtractor={(item) => item.type === 'invitation' ? `inv-${item.id}` : `list-${item.id}`}
+              data={lists}
+              keyExtractor={(item) => item.id}
               showsHorizontalScrollIndicator={false}
               
               snapToAlignment="start"
@@ -121,31 +97,19 @@ export default function MyListsScreen() {
               contentContainerStyle={{ paddingHorizontal: 20 }}
               ItemSeparatorComponent={() => <View style={{ width: 0 }} />}
               
-              renderItem={({ item }) => {
-                if (item.type === 'invitation') {
-                  return (
-                    <InvitationPreviewCard 
-                      invitation={item as Invitation} 
-                      onAccept={() => handleAcceptInvitation(item.id)}
-                      onDecline={() => handleDeclineInvitation(item.id)}
-                    />
-                  );
-                } else {
-                  return (
-                    <ListPreviewCard 
-                      list={item} 
-                      onPress={() => router.push({
-                        pathname: `/list/${item.id}`,
-                        params: { name: item.name }
-                      } as any)}
-                      onLongPress={() => {
-                        setSelectedListForSettings(item);
-                        setIsSettingsVisible(true);
-                      }}
-                    />
-                  );
-                }
-              }}
+              renderItem={({ item }) => (
+                <ListPreviewCard
+                  list={item}
+                  onPress={() => router.push({
+                    pathname: `/list/${item.id}`,
+                    params: { name: item.name }
+                  } as any)}
+                  onLongPress={() => {
+                    setSelectedListForSettings(item);
+                    setIsSettingsVisible(true);
+                  }}
+                />
+              )}
             />
           )}
         </View>
