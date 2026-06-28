@@ -1,0 +1,211 @@
+
+> todolist-offline@1.0.31 web
+> expo start --web
+
+Starting project at /app
+React Compiler enabled
+Starting Metro Bundler
+
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+λ Bundled 31269ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1632 modules)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 32617ms node_modules/expo-router/entry.js (1595 modules)
+λ Bundled 59ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1 module)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 1325ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 13255ms node_modules/expo-router/entry.js (1599 modules)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"}
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  LOG  === DIAGNOSTYKA ENV ===
+Web  LOG  Mój plik .env ładuje API_URL jako: undefined
+Web  LOG  =======================
+Web  WARN  "shadow*" style props are deprecated. Use "boxShadow".
+Web  WARN  "textShadow*" style props are deprecated. Use "textShadow".
+λ Bundled 122ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1 module)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 855ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 161ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 1438ms node_modules/expo-sqlite/web/worker.ts (16 modules)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"}
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  LOG  === DIAGNOSTYKA ENV ===
+Web  LOG  Mój plik .env ładuje API_URL jako: undefined
+Web  LOG  =======================
+Web  WARN  "shadow*" style props are deprecated. Use "boxShadow".
+Web  WARN  "textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 4ms node_modules/expo-sqlite/web/worker.ts (1 module)
+Web  LOG  [DB] Migracja: Pomyślnie dodano kolumnę 'parent_sub_task_id' do 'sub_tasks'.
+Web  LOG  Wykryto brakującą kolumnę icon! Trwa aktualizacja bazy...
+Web  LOG  Kolumna icon została pomyślnie dodana.
+Web  ERROR  [TypeError: ExpoSecureStore.default.getValueWithKeyAsync is not a function]
+
+Code: useTodoWebSocket.ts
+[0m [90m 26 |[39m
+ [90m 27 |[39m     [36mconst[39m connect [33m=[39m [36masync[39m () [33m=>[39m {
+[31m[1m>[22m[39m[90m 28 |[39m       [36mlet[39m token [33m=[39m [36mawait[39m [33mSecureStore[39m[33m.[39mgetItemAsync([32m'accessToken'[39m)[33m;[39m
+ [90m    |[39m                                    [31m[1m^[22m[39m
+ [90m 29 |[39m       [36mif[39m ([33m![39mtoken) [36mreturn[39m[33m;[39m
+ [90m 30 |[39m
+ [90m 31 |[39m       [36mconst[39m wsUrl [33m=[39m [33mAPI_URL[39m[33m.[39mreplace([32m'http'[39m[33m,[39m [32m'ws'[39m)[33m.[39mreplace([32m'/api'[39m[33m,[39m [32m''[39m) [33m+[39m [32m'/ws-todo'[39m[33m;[39m[0m
+Call Stack
+  connect (src/hooks/useTodoWebSocket.ts:28:36)
+  useEffect$argument_0 (src/hooks/useTodoWebSocket.ts:72:5)
+λ Bundled 74ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1 module)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 659ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 87ms node_modules/expo-router/entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"}
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  LOG  === DIAGNOSTYKA ENV ===
+Web  LOG  Mój plik .env ładuje API_URL jako: undefined
+Web  LOG  =======================
+Web  WARN  "shadow*" style props are deprecated. Use "boxShadow".
+Web  WARN  "textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 3ms node_modules/expo-sqlite/web/worker.ts (1 module)
+Web  LOG  [DB] Migracja: Pomyślnie dodano kolumnę 'parent_sub_task_id' do 'sub_tasks'.
+Web  LOG  Wykryto brakującą kolumnę icon! Trwa aktualizacja bazy...
+Web  LOG  Kolumna icon została pomyślnie dodana.
+Web  ERROR  [TypeError: ExpoSecureStore.default.getValueWithKeyAsync is not a function]
+
+Code: useTodoWebSocket.ts
+[0m [90m 26 |[39m
+ [90m 27 |[39m     [36mconst[39m connect [33m=[39m [36masync[39m () [33m=>[39m {
+[31m[1m>[22m[39m[90m 28 |[39m       [36mlet[39m token [33m=[39m [36mawait[39m [33mSecureStore[39m[33m.[39mgetItemAsync([32m'accessToken'[39m)[33m;[39m
+ [90m    |[39m                                    [31m[1m^[22m[39m
+ [90m 29 |[39m       [36mif[39m ([33m![39mtoken) [36mreturn[39m[33m;[39m
+ [90m 30 |[39m
+ [90m 31 |[39m       [36mconst[39m wsUrl [33m=[39m [33mAPI_URL[39m[33m.[39mreplace([32m'http'[39m[33m,[39m [32m'ws'[39m)[33m.[39mreplace([32m'/api'[39m[33m,[39m [32m''[39m) [33m+[39m [32m'/ws-todo'[39m[33m;[39m[0m
+Call Stack
+  connect (src/hooks/useTodoWebSocket.ts:28:36)
+  useEffect$argument_0 (src/hooks/useTodoWebSocket.ts:72:5)
+λ Bundled 57ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1 module)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 675ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 77ms node_modules/expo-router/entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"}
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  LOG  === DIAGNOSTYKA ENV ===
+Web  LOG  Mój plik .env ładuje API_URL jako: undefined
+Web  LOG  =======================
+Web  WARN  "shadow*" style props are deprecated. Use "boxShadow".
+Web  WARN  "textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 5ms node_modules/expo-sqlite/web/worker.ts (1 module)
+Web  LOG  [DB] Migracja: Pomyślnie dodano kolumnę 'parent_sub_task_id' do 'sub_tasks'.
+Web  LOG  Wykryto brakującą kolumnę icon! Trwa aktualizacja bazy...
+Web  LOG  Kolumna icon została pomyślnie dodana.
+Web  ERROR  [TypeError: ExpoSecureStore.default.getValueWithKeyAsync is not a function]
+
+Code: useTodoWebSocket.ts
+[0m [90m 26 |[39m
+ [90m 27 |[39m     [36mconst[39m connect [33m=[39m [36masync[39m () [33m=>[39m {
+[31m[1m>[22m[39m[90m 28 |[39m       [36mlet[39m token [33m=[39m [36mawait[39m [33mSecureStore[39m[33m.[39mgetItemAsync([32m'accessToken'[39m)[33m;[39m
+ [90m    |[39m                                    [31m[1m^[22m[39m
+ [90m 29 |[39m       [36mif[39m ([33m![39mtoken) [36mreturn[39m[33m;[39m
+ [90m 30 |[39m
+ [90m 31 |[39m       [36mconst[39m wsUrl [33m=[39m [33mAPI_URL[39m[33m.[39mreplace([32m'http'[39m[33m,[39m [32m'ws'[39m)[33m.[39mreplace([32m'/api'[39m[33m,[39m [32m''[39m) [33m+[39m [32m'/ws-todo'[39m[33m;[39m[0m
+Call Stack
+  connect (src/hooks/useTodoWebSocket.ts:28:36)
+  useEffect$argument_0 (src/hooks/useTodoWebSocket.ts:72:5)
+λ Bundled 69ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1 module)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 642ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 102ms node_modules/expo-router/entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"}
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  LOG  === DIAGNOSTYKA ENV ===
+Web  LOG  Mój plik .env ładuje API_URL jako: undefined
+Web  LOG  =======================
+Web  WARN  "shadow*" style props are deprecated. Use "boxShadow".
+Web  WARN  "textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 4ms node_modules/expo-sqlite/web/worker.ts (1 module)
+Web  LOG  [DB] Migracja: Pomyślnie dodano kolumnę 'parent_sub_task_id' do 'sub_tasks'.
+Web  LOG  Wykryto brakującą kolumnę icon! Trwa aktualizacja bazy...
+Web  LOG  Kolumna icon została pomyślnie dodana.
+Web  ERROR  [TypeError: ExpoSecureStore.default.getValueWithKeyAsync is not a function]
+
+Code: useTodoWebSocket.ts
+[0m [90m 26 |[39m
+ [90m 27 |[39m     [36mconst[39m connect [33m=[39m [36masync[39m () [33m=>[39m {
+[31m[1m>[22m[39m[90m 28 |[39m       [36mlet[39m token [33m=[39m [36mawait[39m [33mSecureStore[39m[33m.[39mgetItemAsync([32m'accessToken'[39m)[33m;[39m
+ [90m    |[39m                                    [31m[1m^[22m[39m
+ [90m 29 |[39m       [36mif[39m ([33m![39mtoken) [36mreturn[39m[33m;[39m
+ [90m 30 |[39m
+ [90m 31 |[39m       [36mconst[39m wsUrl [33m=[39m [33mAPI_URL[39m[33m.[39mreplace([32m'http'[39m[33m,[39m [32m'ws'[39m)[33m.[39mreplace([32m'/api'[39m[33m,[39m [32m''[39m) [33m+[39m [32m'/ws-todo'[39m[33m;[39m[0m
+Call Stack
+  connect (src/hooks/useTodoWebSocket.ts:28:36)
+  useEffect$argument_0 (src/hooks/useTodoWebSocket.ts:72:5)
+λ Bundled 55ms node_modules/expo/node_modules/@expo/cli/node_modules/@expo/router-server/node/render.js (1 module)
+=== DIAGNOSTYKA ENV ===
+Mój plik .env ładuje API_URL jako: undefined
+=======================
+"shadow*" style props are deprecated. Use "boxShadow".
+"textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 630ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 83ms node_modules/expo-router/entry.js (1 module)
+Web  INFO  %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Web  LOG  Running application "main" with appParams:
+ {"hydrate": undefined, "rootTag": "#root"}
+Development-level warnings: ON.
+Performance optimizations: OFF.
+Web  LOG  === DIAGNOSTYKA ENV ===
+Web  LOG  Mój plik .env ładuje API_URL jako: undefined
+Web  LOG  =======================
+Web  WARN  "shadow*" style props are deprecated. Use "boxShadow".
+Web  WARN  "textShadow*" style props are deprecated. Use "textShadow".
+Web Bundled 6ms node_modules/expo-sqlite/web/worker.ts (1 module)
+Web  LOG  [DB] Migracja: Pomyślnie dodano kolumnę 'parent_sub_task_id' do 'sub_tasks'.
+Web  LOG  Wykryto brakującą kolumnę icon! Trwa aktualizacja bazy...
+Web  LOG  Kolumna icon została pomyślnie dodana.
+Web  ERROR  [TypeError: ExpoSecureStore.default.getValueWithKeyAsync is not a function]
+
+Code: useTodoWebSocket.ts
+[0m [90m 26 |[39m
+ [90m 27 |[39m     [36mconst[39m connect [33m=[39m [36masync[39m () [33m=>[39m {
+[31m[1m>[22m[39m[90m 28 |[39m       [36mlet[39m token [33m=[39m [36mawait[39m [33mSecureStore[39m[33m.[39mgetItemAsync([32m'accessToken'[39m)[33m;[39m
+ [90m    |[39m                                    [31m[1m^[22m[39m
+ [90m 29 |[39m       [36mif[39m ([33m![39mtoken) [36mreturn[39m[33m;[39m
+ [90m 30 |[39m
+ [90m 31 |[39m       [36mconst[39m wsUrl [33m=[39m [33mAPI_URL[39m[33m.[39mreplace([32m'http'[39m[33m,[39m [32m'ws'[39m)[33m.[39mreplace([32m'/api'[39m[33m,[39m [32m''[39m) [33m+[39m [32m'/ws-todo'[39m[33m;[39m[0m
+Call Stack
+  connect (src/hooks/useTodoWebSocket.ts:28:36)
+  useEffect$argument_0 (src/hooks/useTodoWebSocket.ts:72:5)
