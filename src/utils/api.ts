@@ -166,3 +166,179 @@ export const fetchArchivedListsAPI = async () => {
     return [];
   } catch (e) { return []; }
 };
+// --- LIST SHARING API ---
+
+export const sendEmailInvitationAPI = async (listId: string, email: string, permission: string = "READ") => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return { success: false, message: 'Brak tokena dostępu' };
+
+  try {
+    let response = await fetch(`${API_URL}/shares/invite`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listId, email, permission })
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return { success: false, message: 'Brak tokena dostępu po odświeżeniu' };
+      response = await fetch(`${API_URL}/shares/invite`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listId, email, permission })
+      });
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: 'Błąd podczas wysyłania zaproszenia' };
+  } catch (e) {
+    console.error("[API] Błąd wysyłania zaproszenia e-mail:", e);
+    return { success: false, message: 'Błąd połączenia' };
+  }
+};
+
+export const fetchPendingInvitationsAPI = async () => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return [];
+
+  try {
+    let response = await fetch(`${API_URL}/shares/invitations`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return [];
+      response = await fetch(`${API_URL}/shares/invitations`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    if (response.ok) {
+      return await response.json();
+    }
+    return [];
+  } catch (e) {
+    console.error("[API] Błąd pobierania oczekujących zaproszeń:", e);
+    return [];
+  }
+};
+
+export const acceptInvitationAPI = async (shareId: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return false;
+
+  try {
+    let response = await fetch(`${API_URL}/shares/${shareId}/accept`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return false;
+      response = await fetch(`${API_URL}/shares/${shareId}/accept`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    return response.ok;
+  } catch (e) {
+    console.error("[API] Błąd akceptacji zaproszenia:", e);
+    return false;
+  }
+};
+
+export const declineInvitationAPI = async (shareId: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return false;
+
+  try {
+    let response = await fetch(`${API_URL}/shares/${shareId}/decline`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return false;
+      response = await fetch(`${API_URL}/shares/${shareId}/decline`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    return response.ok;
+  } catch (e) {
+    console.error("[API] Błąd odrzucenia zaproszenia:", e);
+    return false;
+  }
+};
+
+export const generateShareLinkAPI = async (listId: string, permission: string = "READ") => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return null;
+
+  try {
+    let response = await fetch(`${API_URL}/shares/link/${listId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permission })
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return null;
+      response = await fetch(`${API_URL}/shares/link/${listId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permission })
+      });
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.link;
+    }
+    return null;
+  } catch (e) {
+    console.error("[API] Błąd generowania linku:", e);
+    return null;
+  }
+};
+
+export const confirmJoinLinkAPI = async (joinToken: string) => {
+  let token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return { success: false, message: 'Brak tokena dostępu' };
+
+  try {
+    let response = await fetch(`${API_URL}/shares/join/${joinToken}/confirm`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.status === 401) {
+      token = await refreshAccessToken();
+      if (!token) return { success: false, message: 'Brak tokena dostępu po odświeżeniu' };
+      response = await fetch(`${API_URL}/shares/join/${joinToken}/confirm`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      return { success: true, message: data.message };
+    }
+    return { success: false, message: 'Nie udało się dołączyć do listy.' };
+  } catch (e) {
+    console.error("[API] Błąd podczas dołączania z linku:", e);
+    return { success: false, message: 'Błąd połączenia' };
+  }
+};

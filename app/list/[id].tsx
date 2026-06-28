@@ -1,5 +1,7 @@
 // app/list/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
+import { generateShareLinkAPI } from '../../src/utils/api';
+
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -528,13 +530,20 @@ export default function ListDetailScreen() {
           setIsShareModalVisible(false);
           router.push(`/list/share/${id}`);
         }}
-        onSelectLink={() => {
+        onSelectLink={async () => {
           setIsShareModalVisible(false);
-          // TODO: Implement link sharing later
+          if (id) {
+            const link = await generateShareLinkAPI(id as string);
+            if (link) {
+              Alert.alert("Udostępnij link", link);
+            } else {
+              Alert.alert("Błąd", "Nie udało się wygenerować linku.");
+            }
+          }
         }}
-        onSelectCode={() => {
+        onSelectEmail={() => {
           setIsShareModalVisible(false);
-          // TODO: Implement code sharing later
+          router.push(`/list/invite/${id}`);
         }}
       />
     </View>
