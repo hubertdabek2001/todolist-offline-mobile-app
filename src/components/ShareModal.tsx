@@ -8,7 +8,7 @@ interface ShareModalProps {
   onClose: () => void;
   onSelectQRCode: () => void;
   onSelectLink: () => void;
-  onSelectCode: () => void;
+  onSelectEmail: () => void;
 }
 
 export default function ShareModal({ 
@@ -16,7 +16,7 @@ export default function ShareModal({
   onClose, 
   onSelectQRCode, 
   onSelectLink, 
-  onSelectCode 
+  onSelectEmail 
 }: ShareModalProps) {
   const { colors } = useAppTheme();
 
@@ -47,12 +47,12 @@ export default function ShareModal({
 
         <TouchableOpacity 
           style={[styles.optionRow, { borderBottomColor: colors.outlineVariant, borderBottomWidth: 0 }]} 
-          onPress={onSelectCode}
+          onPress={onSelectEmail}
         >
           <View style={[styles.iconContainer, { backgroundColor: colors.primaryContainer }]}>
-            <Ionicons name="keypad-outline" size={24} color={colors.onPrimaryContainer} />
+            <Ionicons name="mail-outline" size={24} color={colors.onPrimaryContainer} />
           </View>
-          <Text style={[styles.optionText, { color: colors.text }]}>Kod</Text>
+          <Text style={[styles.optionText, { color: colors.text }]}>Zaproś przez E-mail</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
