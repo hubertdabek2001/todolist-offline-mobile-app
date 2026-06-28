@@ -16,6 +16,7 @@ import {
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ActivityModal from '../../src/components/ActivityModal';
+import ShareModal from '../../src/components/ShareModal';
 import TaskEditModal from '../../src/components/TaskEditModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import {
@@ -55,6 +56,7 @@ export default function ListDetailScreen() {
   const { latestActivity, isConnected } = useTodoWebSocket(id as string);
   const [isActivityFeedVisible, setIsActivityFeedVisible] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [isShareModalVisible, setIsShareModalVisible] = useState(false);
 
   const router = useRouter();
 
@@ -425,8 +427,8 @@ export default function ListDetailScreen() {
                 <Ionicons name="notifications-outline" size={24} color={colors.text} />
               </TouchableOpacity>
               
-              <TouchableOpacity onPress={() => router.push(`/list/share/${id}`)}>
-                <Ionicons name="qr-code-outline" size={24} color={colors.text} />
+              <TouchableOpacity onPress={() => setIsShareModalVisible(true)}>
+                <Ionicons name="share-outline" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
           )
@@ -518,6 +520,22 @@ export default function ListDetailScreen() {
         onClose={() => setSelectedSubTaskToEdit(null)}
         subTask={selectedSubTaskToEdit}
         onSave={handleSaveSubTaskEdit}
+      />
+      <ShareModal
+        visible={isShareModalVisible}
+        onClose={() => setIsShareModalVisible(false)}
+        onSelectQRCode={() => {
+          setIsShareModalVisible(false);
+          router.push(`/list/share/${id}`);
+        }}
+        onSelectLink={() => {
+          setIsShareModalVisible(false);
+          // TODO: Implement link sharing later
+        }}
+        onSelectCode={() => {
+          setIsShareModalVisible(false);
+          // TODO: Implement code sharing later
+        }}
       />
     </View>
   );
