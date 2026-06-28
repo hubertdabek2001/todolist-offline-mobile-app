@@ -31,6 +31,7 @@ import {
   toggleTaskStatus
 } from '../../src/database/repositories';
 import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
+import { performPull, performSync } from '../../src/services/syncService';
 import { archiveListAPI, fetchActivityLogs } from '../../src/utils/api';
 
 export default function ListDetailScreen() {
@@ -136,8 +137,11 @@ export default function ListDetailScreen() {
       setTimeout(() => {
         setActivityLogs(prev => [newLog, ...prev]);
       }, 0);
+
+      // Pull data when a websocket push event arrives
+      performPull().then(() => loadData());
     }
-  }, [latestActivity, isActivityFeedVisible]);
+  }, [latestActivity, isActivityFeedVisible, loadData]);
 
   const handleAddItem = async () => {
     if (inputText.trim() === '' || !id || isSubmitting) return;
@@ -158,6 +162,7 @@ export default function ListDetailScreen() {
       setInputText('');
       setIsInputVisible(false);
       await loadData();
+      performSync();
     } catch (e) {
       console.error("Błąd podczas dodawania:", e);
     } finally {
@@ -170,6 +175,7 @@ export default function ListDetailScreen() {
     await toggleTaskStatus(task.id, task.is_completed);
     addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'TASK', task.title); // LOKALNY LOG
     await loadData();
+    performSync();
   };
 
   const handleToggleSubTask = async (subTask: SubTask) => {
@@ -177,6 +183,7 @@ export default function ListDetailScreen() {
     await toggleSubTaskStatus(subTask.id, subTask.is_completed);
     addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'SUBTASK', subTask.title); // LOKALNY LOG
     await loadData();
+    performSync();
   };
 
   const handleArchive = () => {
@@ -219,6 +226,7 @@ export default function ListDetailScreen() {
             await deleteTask(task.id);
             addLocalLog('DELETE', 'TASK', task.title); // LOKALNY LOG
             await loadData();
+            performSync();
           }
         }
       ]
@@ -238,6 +246,7 @@ export default function ListDetailScreen() {
             await deleteSubTask(subTask.id);
             addLocalLog('DELETE', 'SUBTASK', subTask.title); // LOKALNY LOG
             await loadData();
+            performSync();
           }
         }
       ]
@@ -254,6 +263,7 @@ export default function ListDetailScreen() {
     addLocalLog('UPDATE', 'TASK', title);
     setSelectedTaskToEdit(null);
     await loadData();
+    performSync();
   };
 
   const handleEditSubTask = (subTask: SubTask) => {
@@ -266,6 +276,7 @@ export default function ListDetailScreen() {
     addLocalLog('UPDATE', 'SUBTASK', title);
     setSelectedSubTaskToEdit(null);
     await loadData();
+    performSync();
   };
 
   const renderTaskItem = ({ item }: { item: Task }) => {
