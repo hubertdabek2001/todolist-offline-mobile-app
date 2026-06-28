@@ -1,12 +1,25 @@
 // app/(tabs)/_layout.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../src/components/ThemeProvider';
+import { fetchPendingInvitationsAPI } from '../../src/utils/api';
 
 export default function TabLayout() {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const [invitationsCount, setInvitationsCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadInvitationsCount = async () => {
+        const pendingInvitations = await fetchPendingInvitationsAPI();
+        setInvitationsCount(pendingInvitations.length);
+      };
+      loadInvitationsCount();
+    }, [])
+  );
 
   return (
     <Tabs
@@ -39,6 +52,7 @@ export default function TabLayout() {
           title: 'Wspólne',
           headerShown: false,
           tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={24} color={color} />,
+          tabBarBadge: invitationsCount > 0 ? invitationsCount : undefined,
         }}
       />
       <Tabs.Screen
