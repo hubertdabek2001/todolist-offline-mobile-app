@@ -7,6 +7,7 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@stomp/stompjs": "^7.3.0",
+    "dotenv": "^17.4.2",
     "expo": "~56.0.12",
     "expo-background-task": "^56.0.19",
     "expo-camera": "~56.0.8",
@@ -44,6 +45,7 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~56.0.4",
     "husky": "^9.1.7",
+    "react-native-dotenv": "^3.4.11",
     "typescript": "~6.0.3"
   },
   "scripts": {

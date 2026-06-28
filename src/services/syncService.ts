@@ -2,7 +2,9 @@
 import * as SecureStore from 'expo-secure-store';
 import { getDatabase } from '../database/database';
 import { applyPulledData } from '../database/repositories';
-import { API_URL, fetchSyncPull, refreshAccessToken } from '../utils/api';
+import { fetchSyncPull, refreshAccessToken } from '../utils/api';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export async function performSync() {
   try {

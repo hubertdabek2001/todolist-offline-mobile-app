@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../src/components/ThemeProvider';
-import { API_URL } from '../src/utils/api';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 interface SetupProfileScreenProps {
   token: string;

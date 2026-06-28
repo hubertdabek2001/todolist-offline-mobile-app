@@ -3,7 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Alert, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL } from '../src/utils/api';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 interface VerifyScreenProps {
   email: string;

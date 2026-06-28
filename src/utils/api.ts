@@ -1,8 +1,11 @@
 // src/utils/api.ts
 import * as SecureStore from 'expo-secure-store';
 
-// Podmień na IP swojego komputera (widzę w logach, że to 192.168.0.105)
-export const API_URL = 'http://192.168.0.105:8080/api'; 
+console.log("=== DIAGNOSTYKA ENV ===");
+console.log("Mój plik .env ładuje API_URL jako:", process.env.EXPO_PUBLIC_API_URL);
+console.log("=======================");
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const refreshAccessToken = async (): Promise<string | null> => {
   try {
