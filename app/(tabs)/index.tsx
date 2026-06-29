@@ -3,13 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import ListSettingsModal from '../../src/components/ListSettingsModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { createList, evaluateAutoPriority, getMyLists } from '../../src/database/repositories';
-import { performSync } from '../../src/services/syncService';
+import { performPull, performSync } from '../../src/services/syncService';
 
 interface TodoList {
   id: string;
@@ -31,6 +31,7 @@ export default function MyListsScreen() {
   const [isInputVisible, setIsInputVisible] = useState(false);
   const [selectedListForSettings, setSelectedListForSettings] = useState<TodoList | null>(null);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const { colors, theme } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -65,6 +66,16 @@ export default function MyListsScreen() {
     performSync();
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await performPull();
+      await loadLists();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
@@ -72,7 +83,18 @@ export default function MyListsScreen() {
     >
       
       {/* 1. Kontener z flex: 1 zajmujący całą górną przestrzeń */}
-      <View style={{ flex: 1 }}>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[colors.primary]} 
+            tintColor={colors.primary} 
+          />
+        }
+      >
 
         <View style={styles.titleContainer}>
           <Text style={[styles.mainTitle, { color: colors.text }]}>Moje Listy</Text>
@@ -115,7 +137,7 @@ export default function MyListsScreen() {
         </View>
 
         
-      </View>
+      </ScrollView>
 
       {/* 2. Naturalnie pozycjonowany dolny kontener */}
       <View style={[styles.floatingInputWrapper, { bottom: Math.max(20, insets.bottom + 10) }]}>
