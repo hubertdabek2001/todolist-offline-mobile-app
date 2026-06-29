@@ -1,7 +1,9 @@
 // src/hooks/useTodoWebSocket.ts
 import { Client } from '@stomp/stompjs';
+import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { API_URL, refreshAccessToken } from '../utils/api';
 
 export interface ActivityLog {
@@ -26,12 +28,13 @@ export const useTodoWebSocket = (listId: string | undefined) => {
   const [viewers, setViewers] = useState<Viewer[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
-  useEffect(() => {
-    if (!listId) return;
+  useFocusEffect(
+    useCallback(() => {
+      if (!listId) return;
 
-    let isActive = true;
+      let isActive = true;
 
-    const connect = async () => {
+      const connect = async () => {
       let token = await SecureStore.getItemAsync('accessToken');
       if (!token) return;
 
@@ -83,15 +86,29 @@ export const useTodoWebSocket = (listId: string | undefined) => {
       client.current.activate();
     };
 
-    connect();
+      connect();
 
-    return () => {
-      isActive = false;
-      if (client.current) {
-        client.current.deactivate();
-      }
-    };
-  }, [listId]);
+      const appStateListener = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'background' || nextAppState === 'inactive') {
+          if (client.current) {
+            client.current.deactivate();
+          }
+        } else if (nextAppState === 'active') {
+          if (client.current && !client.current.active) {
+            client.current.activate();
+          }
+        }
+      });
+
+      return () => {
+        isActive = false;
+        appStateListener.remove();
+        if (client.current) {
+          client.current.deactivate();
+        }
+      };
+    }, [listId])
+  );
 
   return { latestActivity, viewers, isConnected };
 };
