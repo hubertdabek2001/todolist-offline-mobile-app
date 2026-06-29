@@ -2,13 +2,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAppTheme } from '../src/components/ThemeProvider';
+import { useCustomAlert } from '../src/components/CustomAlert';
 import { applyPulledData } from '../src/database/repositories';
 import { fetchArchivedListsAPI, fetchSyncPull, restoreListAPI } from '../src/utils/api';
 
 export default function ArchivedListsScreen() {
   const { colors } = useAppTheme();
+  const { showAlert } = useCustomAlert();
   const [archivedLists, setArchivedLists] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export default function ArchivedListsScreen() {
   }, []);
 
   const handleRestore = async (id: string, name: string) => {
-    Alert.alert(
+    showAlert(
       "Przywracanie listy", 
       `Czy chcesz przywrócić "${name}" na swoje urządzenie?`, 
       [
@@ -47,10 +49,10 @@ export default function ArchivedListsScreen() {
                 const pulledData = await fetchSyncPull();
                 if (pulledData) await applyPulledData(pulledData);
                 
-                Alert.alert("Sukces", "Lista jest znów dostępna na Twoim ekranie głównym!");
+                showAlert("Sukces", "Lista jest znów dostępna na Twoim ekranie głównym!");
                 loadArchived();
             } else {
-                Alert.alert("Błąd", "Nie udało się przywrócić listy.");
+                showAlert("Błąd", "Nie udało się przywrócić listy.");
             }
         }}
       ]

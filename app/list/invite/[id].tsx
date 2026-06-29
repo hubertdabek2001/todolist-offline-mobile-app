@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../src/components/ThemeProvider';
+import { useCustomAlert } from '../../../src/components/CustomAlert';
 import { sendEmailInvitationAPI } from '../../../src/utils/api';
 
 export default function InviteListScreen() {
@@ -13,6 +14,7 @@ export default function InviteListScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const router = useRouter();
+  const { showAlert } = useCustomAlert();
 
   const handleSendInvite = async () => {
     if (!email.trim() || !id) return;
@@ -23,11 +25,11 @@ export default function InviteListScreen() {
     setIsSending(false);
 
     if (result.success) {
-      Alert.alert("Sukces", "Zaproszenie zostało wysłane pomyślnie.", [
+      showAlert("Sukces", "Zaproszenie zostało wysłane pomyślnie.", [
         { text: "OK", onPress: () => router.back() }
       ]);
     } else {
-      Alert.alert("Błąd", result.message || "Nie udało się wysłać zaproszenia.");
+      showAlert("Błąd", result.message || "Nie udało się wysłać zaproszenia.");
     }
   };
 

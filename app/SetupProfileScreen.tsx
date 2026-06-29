@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../src/components/ThemeProvider';
+import { useCustomAlert } from '../src/components/CustomAlert';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -26,6 +26,7 @@ interface SetupProfileScreenProps {
 export default function SetupProfileScreen({ token, onSuccess }: SetupProfileScreenProps) {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { showAlert } = useCustomAlert();
 
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -41,7 +42,7 @@ export default function SetupProfileScreen({ token, onSuccess }: SetupProfileScr
     
     // 1. Minimum jedno: Imię lub Nick musi zostać podane
     if (!trimmedUsername && !trimmedFirstName) {
-      Alert.alert(
+      showAlert(
         "Brak danych", 
         "Abyśmy wiedzieli jak się do Ciebie zwracać, musisz podać nazwę użytkownika (nick) lub swoje imię."
       );
@@ -50,7 +51,7 @@ export default function SetupProfileScreen({ token, onSuccess }: SetupProfileScr
 
     // 2. Jeśli podano nazwisko, imię jest bezwzględnie wymagane
     if (trimmedLastName && !trimmedFirstName) {
-      Alert.alert(
+      showAlert(
         "Brak imienia", 
         "Skoro podajesz nazwisko, pole Imię również staje się obowiązkowe."
       );
@@ -78,10 +79,10 @@ export default function SetupProfileScreen({ token, onSuccess }: SetupProfileScr
         onSuccess();
       } else {
         const data = await response.json();
-        Alert.alert("Błąd", data.error || "Wystąpił problem z zapisem danych.");
+        showAlert("Błąd", data.error || "Wystąpił problem z zapisem danych.");
       }
     } catch (error) {
-      Alert.alert("Błąd połączenia", "Sprawdź swoje połączenie internetowe i spróbuj ponownie.");
+      showAlert("Błąd połączenia", "Sprawdź swoje połączenie internetowe i spróbuj ponownie.");
     } finally {
       setIsLoading(false);
     }

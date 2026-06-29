@@ -1,8 +1,9 @@
 // app/VerifyScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Alert, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCustomAlert } from '../src/components/CustomAlert';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -15,6 +16,7 @@ interface VerifyScreenProps {
 const AnimatedView = Animated.View as any;
 
 export default function VerifyScreen({ email, onBack, onSuccess }: VerifyScreenProps) {
+  const { showAlert } = useCustomAlert();
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [timer, setTimer] = useState(59);
   const [isSuccessState, setIsSuccessState] = useState(false);
@@ -73,11 +75,11 @@ export default function VerifyScreen({ email, onBack, onSuccess }: VerifyScreenP
           onSuccess(data.accessToken, data.refreshToken, data.requiresProfileSetup);
         }, 1200);
       } else {
-        Alert.alert("Błąd", data.error || "Nieprawidłowy kod OTP");
+        showAlert("Błąd", data.error || "Nieprawidłowy kod OTP");
         setOtp(Array(6).fill('')); // Resetujemy pola po błędzie
       }
     } catch (e) {
-      Alert.alert("Błąd połączenia", "Nie można połączyć się z serwerem.");
+      showAlert("Błąd połączenia", "Nie można połączyć się z serwerem.");
     }
   };
 

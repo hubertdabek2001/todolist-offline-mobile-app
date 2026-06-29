@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAppTheme } from '../src/components/ThemeProvider';
+import { useCustomAlert } from '../src/components/CustomAlert';
 import { performSync } from '../src/services/syncService';
 import { confirmJoinLinkAPI } from '../src/utils/api';
 
@@ -9,12 +10,13 @@ export default function JoinScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { showAlert } = useCustomAlert();
   const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     async function processJoin() {
       if (!token) {
-        Alert.alert("Błąd", "Brak tokena w linku.");
+        showAlert("Błąd", "Brak tokena w linku.");
         router.replace('/(tabs)');
         return;
       }
@@ -23,10 +25,10 @@ export default function JoinScreen() {
       const result = await confirmJoinLinkAPI(token);
 
       if (result.success) {
-        Alert.alert("Sukces", "Pomyślnie dołączono do listy!");
+        showAlert("Sukces", "Pomyślnie dołączono do listy!");
         performSync();
       } else {
-        Alert.alert("Błąd", result.message || "Nie udało się dołączyć.");
+        showAlert("Błąd", result.message || "Nie udało się dołączyć.");
       }
 
       router.replace('/(tabs)');

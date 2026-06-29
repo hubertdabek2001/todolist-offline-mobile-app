@@ -6,7 +6,6 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -24,6 +23,7 @@ import ActivityModal from '../../src/components/ActivityModal';
 import ShareModal from '../../src/components/ShareModal';
 import TaskEditModal from '../../src/components/TaskEditModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
+import { useCustomAlert } from '../../src/components/CustomAlert';
 import {
   applyPulledData // DODANE: Wymagane do nadpisania bazy po otrzymaniu wiadomości
   ,
@@ -46,6 +46,7 @@ export default function ListDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
   const insets = useSafeAreaInsets();
   const { colors, theme } = useAppTheme();
+  const { showAlert } = useCustomAlert();
   
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
@@ -189,7 +190,7 @@ export default function ListDetailScreen() {
       setActivityLogs(prev => [newLog, ...prev]);
       
       if (!isActivityFeedVisible) {
-         Alert.alert("Aktualizacja", `Pojawiła się nowa aktywność ("${latestActivity.entityName}"). Sprawdź oś czasu!`);
+         showAlert("Aktualizacja", `Pojawiła się nowa aktywność ("${latestActivity.entityName}"). Sprawdź oś czasu!`);
       }
       
       // KRYTYCZNA NAPRAWA: Zaciągnięcie i nadpisanie w SQLite na żywo!
@@ -253,7 +254,7 @@ export default function ListDetailScreen() {
   };
 
   const handleArchive = () => {
-    Alert.alert(
+    showAlert(
       "Zakończenie listy",
       "Czy na pewno chcesz zarchiwizować tę listę? Zostanie ona bezpowrotnie usunięta z pamięci urządzenia i przeniesiona do archiwum w chmurze.",
       [
@@ -268,10 +269,10 @@ export default function ListDetailScreen() {
               const { deleteList } = await import('../../src/database/repositories');
               await deleteList(id as string); 
               
-              Alert.alert("Sukces", "Lista pomyślnie zarchiwizowana.");
+              showAlert("Sukces", "Lista pomyślnie zarchiwizowana.");
               router.replace('/(tabs)');
             } else {
-              Alert.alert("Błąd", "Do zarchiwizowania tej listy niezbędne jest połączenie z serwerem.");
+              showAlert("Błąd", "Do zarchiwizowania tej listy niezbędne jest połączenie z serwerem.");
             }
           }
         }
@@ -280,7 +281,7 @@ export default function ListDetailScreen() {
   };
 
   const handleDeleteTask = (task: Task) => {
-    Alert.alert(
+    showAlert(
       "Usuwanie zadania",
       `Czy na pewno chcesz usunąć "${task.title}"? Wszystkie podzadania zostaną również usunięte.`,
       [
@@ -300,7 +301,7 @@ export default function ListDetailScreen() {
   };
 
   const handleDeleteSubTask = (subTask: SubTask) => {
-    Alert.alert(
+    showAlert(
       "Usuwanie podzadania",
       `Czy na pewno chcesz usunąć "${subTask.title}"?`,
       [
@@ -614,10 +615,10 @@ export default function ListDetailScreen() {
                   title: 'Udostępnij listę',
                 });
               } catch (error: any) {
-                Alert.alert("Błąd", "Nie udało się otworzyć okna udostępniania.");
+                showAlert("Błąd", "Nie udało się otworzyć okna udostępniania.");
               }
             } else {
-              Alert.alert("Błąd", "Nie udało się wygenerować linku.");
+              showAlert("Błąd", "Nie udało się wygenerować linku.");
             }
           }
         }}
