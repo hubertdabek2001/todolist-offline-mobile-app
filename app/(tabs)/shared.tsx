@@ -5,10 +5,13 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Button, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import InvitationPreviewCard, { Invitation } from '../../src/components/InvitationPreviewCard';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
 import ListSettingsModal from '../../src/components/ListSettingsModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import { getSharedLists } from '../../src/database/repositories';
+import { performPull } from '../../src/services/syncService';
+import { acceptInvitationAPI, declineInvitationAPI, fetchPendingInvitationsAPI } from '../../src/utils/api';
 import { importListFromQR } from '../../src/utils/qrPayloadManager';
 
 const { width } = Dimensions.get('window');
@@ -32,6 +35,7 @@ export default function SharedListsScreen() {
   const insets = useSafeAreaInsets();
   // Stan na udostępnione listy
   const [sharedLists, setSharedLists] = useState<TodoList[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   
   const [selectedListForSettings, setSelectedListForSettings] = useState<TodoList | null>(null);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -39,16 +43,38 @@ export default function SharedListsScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
 
+  const loadShared = async () => {
+    const data = await getSharedLists();
+    setSharedLists(data as TodoList[]);
+    
+    // Fetch invitations
+    const pendingInvitations = await fetchPendingInvitationsAPI();
+    setInvitations(pendingInvitations);
+  };
+
   // Pobieranie list udostępnionych (uruchamia się, gdy wejdziemy w tę zakładkę)
   useFocusEffect(
     useCallback(() => {
-      const loadShared = async () => {
-        const data = await getSharedLists();
-        setSharedLists(data as TodoList[]);
-      };
       loadShared();
     }, [])
   );
+
+  const handleAcceptInvitation = async (shareId: string) => {
+    const success = await acceptInvitationAPI(shareId);
+    if (success) {
+      await performPull();
+      await loadShared();
+    }
+  };
+
+  const handleDeclineInvitation = async (shareId: string) => {
+    const success = await declineInvitationAPI(shareId);
+    if (success) {
+      await loadShared();
+    }
+  };
+
+  const carouselData = [...invitations.map(inv => ({ ...inv, type: 'invitation' })), ...sharedLists.map(list => ({ ...list, type: 'list' }))];
 
   if (!permission) return <View />;
 
@@ -154,35 +180,47 @@ return (
       
       {/* KARUZELA WSPÓLNYCH LIST */}
       <View style={styles.carouselContainer}>
-        {sharedLists.length === 0 ? (
+        {carouselData.length === 0 ? (
           <Text style={[styles.emptyGlobalText, { color: colors.textSecondary }]}>Nie masz jeszcze wspólnych list. Zeskanuj kod QR od znajomego!</Text>
         ) : (
           <FlatList
             horizontal
-            data={sharedLists}
-            keyExtractor={(item) => item.id}
+            data={carouselData as any[]}
+            keyExtractor={(item) => item.type === 'invitation' ? `inv-${item.id}` : `list-${item.id}`}
             showsHorizontalScrollIndicator={false}
             
             // Dokładnie te same bezpieczne ustawienia
-            snapToOffsets={sharedLists.map((_, i) => i * SNAP_INTERVAL)}
+            snapToOffsets={carouselData.map((_, i) => i * SNAP_INTERVAL)}
             disableIntervalMomentum={true} 
             
             decelerationRate="fast"
             contentContainerStyle={{ paddingHorizontal: (width - SNAP_INTERVAL) / 2 }}
             
-            renderItem={({ item }) => (
-              <ListPreviewCard 
-                list={item} 
-                onPress={() => router.push({
-                  pathname: `/list/${item.id}`,
-                  params: { name: item.name }
-                } as any)}
-                onLongPress={() => {
-                  setSelectedListForSettings(item);
-                  setIsSettingsVisible(true);
-                }}
-              />
-            )}
+            renderItem={({ item }) => {
+              if (item.type === 'invitation') {
+                return (
+                  <InvitationPreviewCard 
+                    invitation={item as Invitation} 
+                    onAccept={() => handleAcceptInvitation(item.id)}
+                    onDecline={() => handleDeclineInvitation(item.id)}
+                  />
+                );
+              } else {
+                return (
+                  <ListPreviewCard 
+                    list={item} 
+                    onPress={() => router.push({
+                      pathname: `/list/${item.id}`,
+                      params: { name: item.name }
+                    } as any)}
+                    onLongPress={() => {
+                      setSelectedListForSettings(item);
+                      setIsSettingsVisible(true);
+                    }}
+                  />
+                );
+              }
+            }}
           />
         )}
       </View>

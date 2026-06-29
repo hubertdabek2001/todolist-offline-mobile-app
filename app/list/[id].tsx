@@ -9,6 +9,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -535,7 +536,15 @@ export default function ListDetailScreen() {
           if (id) {
             const link = await generateShareLinkAPI(id as string);
             if (link) {
-              Alert.alert("Udostępnij link", link);
+              try {
+                await Share.share({
+                  message: link,
+                  url: link,
+                  title: 'Udostępnij listę',
+                });
+              } catch (error: any) {
+                Alert.alert("Błąd", "Nie udało się otworzyć okna udostępniania.");
+              }
             } else {
               Alert.alert("Błąd", "Nie udało się wygenerować linku.");
             }
