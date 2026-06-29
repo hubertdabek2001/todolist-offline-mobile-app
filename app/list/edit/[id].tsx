@@ -2,9 +2,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../../src/components/ThemeProvider';
+import { useCustomAlert } from '../../../src/components/CustomAlert';
 import { deleteList, evaluateAutoPriority, getListById, updateListDetails } from '../../../src/database/repositories';
 import { performSync } from '../../../src/services/syncService';
 
@@ -20,6 +21,7 @@ const PREDEFINED_COLORS = [
 export default function EditListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const { showAlert } = useCustomAlert();
   const [listName, setListName] = useState('');
   const [listColor, setListColor] = useState('#ffffff');
   const [editMode, setEditMode] = useState(0);
@@ -59,13 +61,13 @@ export default function EditListScreen() {
     }
     performSync();
     setIsSaving(false);
-    Alert.alert("Zapisano", "Ustawienia listy zostały zaktualizowane.", [
+    showAlert("Zapisano", "Ustawienia listy zostały zaktualizowane.", [
       { text: "OK", onPress: () => router.back() }
     ]);
   };
 
   const handleDelete = () => {
-    Alert.alert(
+    showAlert(
       "Usuwanie listy",
       "Czy na pewno chcesz usunąć tę listę? Wszystkie zadania i podzadania zostaną bezpowrotnie utracone.",
       [

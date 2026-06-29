@@ -3,15 +3,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../src/components/ThemeProvider';
+import { useCustomAlert } from '../src/components/CustomAlert';
 import { API_URL, refreshAccessToken } from '../src/utils/api';
 
 export default function ProfileScreen() {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { showAlert } = useCustomAlert();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,7 +50,7 @@ export default function ProfileScreen() {
         });
       }
     } catch (error) {
-      Alert.alert("Błąd", "Nie udało się pobrać danych profilu.");
+      showAlert("Błąd", "Nie udało się pobrać danych profilu.");
     } finally {
       setIsLoading(false);
     }
@@ -88,14 +90,14 @@ export default function ProfileScreen() {
       }
 
       if (response.ok) {
-        Alert.alert("Sukces", "Twój profil został zaktualizowany!");
+        showAlert("Sukces", "Twój profil został zaktualizowany!");
         router.back();
       } else {
         const data = await response.json();
-        Alert.alert("Błąd", data.error || "Nie udało się zapisać zmian.");
+        showAlert("Błąd", data.error || "Nie udało się zapisać zmian.");
       }
     } catch (error) {
-      Alert.alert("Błąd połączenia", "Sprawdź swoje połączenie z internetem.");
+      showAlert("Błąd połączenia", "Sprawdź swoje połączenie z internetem.");
     } finally {
       setIsSaving(false);
     }

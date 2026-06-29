@@ -5,9 +5,10 @@ import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../src/components/ThemeProvider';
+import { useCustomAlert } from '../../src/components/CustomAlert';
 import { AccentColors, AccentTheme } from '../../src/constants/theme';
 import { clearAllLocalData } from '../../src/database/repositories';
 import { API_URL, refreshAccessToken } from '../../src/utils/api';
@@ -16,6 +17,7 @@ export default function SettingsScreen() {
   const { colors, theme, setThemePreference, accentTheme, setAccentTheme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { showAlert } = useCustomAlert();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSyncEnabled, setIsSyncEnabled] = useState(true);
@@ -93,7 +95,7 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
+    showAlert(
       "Wylogowywanie",
       "Czy na pewno chcesz się wylogować? Twoje dane pozostaną bezpieczne na urządzeniu, ale synchronizacja zostanie wstrzymana.",
       [

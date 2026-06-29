@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'text-encoding';
 import { ThemeProvider } from '../src/components/ThemeProvider';
+import { CustomAlertProvider } from '../src/components/CustomAlert';
 import { initDatabase } from '../src/database/database';
 
 // Importy dla synchronizacji
@@ -55,10 +56,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <SafeAreaProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
+          <CustomAlertProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </CustomAlertProvider>
         </SafeAreaProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
