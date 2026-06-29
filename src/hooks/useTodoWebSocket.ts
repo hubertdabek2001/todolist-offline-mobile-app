@@ -16,9 +16,16 @@ export interface ActivityLog {
   timestamp: string;
 }
 
+export interface Viewer {
+  userId: string;
+  username: string;
+  email: string;
+}
+
 export const useTodoWebSocket = (listId: string | undefined) => {
   const client = useRef<Client | null>(null);
   const [latestActivity, setLatestActivity] = useState<ActivityLog | null>(null);
+  const [viewers, setViewers] = useState<Viewer[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -30,7 +37,7 @@ export const useTodoWebSocket = (listId: string | undefined) => {
       let token = await SecureStore.getItemAsync('accessToken');
       if (!token) return;
 
-      const wsUrl = API_URL.replace('http', 'ws').replace('/api', '') + '/ws-todo';
+      const wsUrl = (API_URL || '').replace('http', 'ws').replace('/api', '') + '/ws-todo';
 
       client.current = new Client({
         brokerURL: wsUrl,
@@ -67,6 +74,13 @@ export const useTodoWebSocket = (listId: string | undefined) => {
             setLatestActivity(activity);
           }
         });
+
+        client.current?.subscribe(`/topic/list/${listId}/presence`, (message) => {
+          if (message.body && isActive) {
+            const currentViewers: Viewer[] = JSON.parse(message.body);
+            setViewers(currentViewers);
+          }
+        });
       };
 
       client.current.onDisconnect = () => {
@@ -86,5 +100,5 @@ export const useTodoWebSocket = (listId: string | undefined) => {
     };
   }, [listId]);
 
-  return { latestActivity, isConnected };
+  return { latestActivity, viewers, isConnected };
 };

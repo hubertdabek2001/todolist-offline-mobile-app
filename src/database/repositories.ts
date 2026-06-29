@@ -106,14 +106,14 @@ export async function createSubTask(taskId: string, title: string, parentSubTask
 
 export async function toggleTaskStatus(taskId: string, currentStatus: number) {
   const db = getDb();
-  const newStatus = currentStatus === 1 ? 0 : 1;
+  const newStatus = currentStatus ? 0 : 1;
   await db.runAsync('UPDATE tasks SET is_completed = ? WHERE id = ?', [newStatus, safe(taskId)]);
   return newStatus;
 }
 
 export async function toggleSubTaskStatus(subTaskId: string, currentStatus: number) {
   const db = getDb();
-  const newStatus = currentStatus === 1 ? 0 : 1;
+  const newStatus = currentStatus ? 0 : 1;
   await db.runAsync('UPDATE sub_tasks SET is_completed = ? WHERE id = ?', [newStatus, safe(subTaskId)]);
   return newStatus;
 }
