@@ -1,10 +1,10 @@
 // app/list/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
-import { API_URL, archiveListAPI, fetchActivityLogs, generateShareLinkAPI, refreshAccessToken } from '../../src/utils/api';
+import { API_URL, archiveListAPI, fetchActivityLogs, fetchSyncPull, generateShareLinkAPI, refreshAccessToken } from '../../src/utils/api';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -25,6 +25,9 @@ import ShareModal from '../../src/components/ShareModal';
 import TaskEditModal from '../../src/components/TaskEditModal';
 import { useAppTheme } from '../../src/components/ThemeProvider';
 import {
+  applyPulledData // DODANE: Wymagane do nadpisania bazy po otrzymaniu wiadomości
+  ,
+
   createSubTask,
   createTask,
   deleteSubTask,
@@ -37,7 +40,7 @@ import {
   toggleTaskStatus
 } from '../../src/database/repositories';
 import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
-import { performPull, performSync } from '../../src/services/syncService';
+import { performSync } from '../../src/services/syncService';
 
 export default function ListDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
@@ -65,9 +68,10 @@ export default function ListDetailScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  const router = useRouter();
+  // REFerencja zapobiegająca nieskończonemu dublowaniu logów przy zmianie stanu!
+  const lastProcessedActivityId = useRef<string | null>(null);
 
-  
+  const router = useRouter();
 
   // --- LOKALNE LOGOWANIE AKTYWNOŚCI ---
   const addLocalLog = useCallback((action: 'CREATE' | 'UPDATE' | 'DELETE' | 'COMPLETE', entityType: 'LIST' | 'TASK' | 'SUBTASK', entityName: string) => {
@@ -167,9 +171,12 @@ export default function ListDetailScreen() {
     };
   }, []);
 
-  // JEDEN POPRAWNY USE_EFFECT DLA WEBSOCKETA
+  // --- ZMODYFIKOWANY POPRAWNY USE_EFFECT DLA WEBSOCKETA ---
   useEffect(() => {
-    if (latestActivity) {
+    // Dodano sprawdzenie REFa, aby zapobiec dublowaniu wiadomości przy otwieraniu Modala!
+    if (latestActivity && latestActivity.id !== lastProcessedActivityId.current) {
+      lastProcessedActivityId.current = latestActivity.id;
+
       const newLog = {
         id: latestActivity.id,
         actionType: latestActivity.actionType,
@@ -179,18 +186,26 @@ export default function ListDetailScreen() {
         authorName: "Ktoś" 
       };
       
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityLogs(prev => [newLog, ...prev]);
       
       if (!isActivityFeedVisible) {
          Alert.alert("Aktualizacja", `Pojawiła się nowa aktywność ("${latestActivity.entityName}"). Sprawdź oś czasu!`);
       }
-      setTimeout(() => {
-        setActivityLogs(prev => [newLog, ...prev]);
-      }, 0);
       
-      // Pull data when a websocket push event arrives
-      performPull().then(() => loadData());
+      // KRYTYCZNA NAPRAWA: Zaciągnięcie i nadpisanie w SQLite na żywo!
+      const syncFromWebSocket = async () => {
+        try {
+          const pulledData = await fetchSyncPull();
+          if (pulledData) {
+            await applyPulledData(pulledData);
+            await loadData(); // To odświeża interfejs na drugim urządzeniu!
+          }
+        } catch (e) {
+          console.log("[WS] Błąd automatycznej synchronizacji: ", e);
+        }
+      };
+
+      syncFromWebSocket();
     }
   }, [latestActivity, isActivityFeedVisible, loadData]);
 
@@ -226,7 +241,7 @@ export default function ListDetailScreen() {
     await toggleTaskStatus(task.id, task.is_completed);
     addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'TASK', task.title); // LOKALNY LOG
     await loadData();
-    performSync();
+    performSync(); // Wypycha zmianę na serwer
   };
 
   const handleToggleSubTask = async (subTask: SubTask) => {
@@ -234,7 +249,7 @@ export default function ListDetailScreen() {
     await toggleSubTaskStatus(subTask.id, subTask.is_completed);
     addLocalLog(newStatus === 1 ? 'COMPLETE' : 'UPDATE', 'SUBTASK', subTask.title); // LOKALNY LOG
     await loadData();
-    performSync();
+    performSync(); // Wypycha zmianę na serwer
   };
 
   const handleArchive = () => {
@@ -460,12 +475,11 @@ export default function ListDetailScreen() {
       <Stack.Screen 
         options={{ 
           title: name || 'Lista',
-          headerShown: true, // ZOSTAWIONE ZGODNIE Z TWOIM PLIKIEM
+          headerShown: true, 
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-              {/* --- PRZYCISK ARCHIWIZACJI --- */}
               <TouchableOpacity onPress={handleArchive}>
                 <Ionicons name="archive-outline" size={24} color={colors.error} />
               </TouchableOpacity>
@@ -761,7 +775,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
-    marginLeft: -8, // slight overlap for multiple viewers
+    marginLeft: -8, 
   },
   viewerInitial: {
     color: '#fff',
