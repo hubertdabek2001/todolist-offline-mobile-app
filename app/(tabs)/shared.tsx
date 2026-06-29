@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Button, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Dimensions, FlatList, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InvitationPreviewCard, { Invitation } from '../../src/components/InvitationPreviewCard';
 import ListPreviewCard, { SNAP_INTERVAL } from '../../src/components/ListPreviewCard';
@@ -39,6 +39,7 @@ export default function SharedListsScreen() {
   
   const [selectedListForSettings, setSelectedListForSettings] = useState<TodoList | null>(null);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const router = useRouter();
   const { colors } = useAppTheme();
@@ -73,6 +74,16 @@ export default function SharedListsScreen() {
       await loadShared();
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await performPull();
+      await loadShared();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const carouselData = [...invitations.map(inv => ({ ...inv, type: 'invitation' })), ...sharedLists.map(list => ({ ...list, type: 'list' }))];
 
@@ -172,58 +183,71 @@ export default function SharedListsScreen() {
 return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {renderToast()}
-      <View style={styles.titleContainer}>
-                <Text style={[styles.mainTitle, { color: colors.text }]}>Wspólne Listy</Text>
-                <Text style={[styles.subTitle, { color: colors.textSecondary }]}>Zarządzaj swoimi zadaniami efektywnie.</Text>
-      </View>
-      
-      
-      {/* KARUZELA WSPÓLNYCH LIST */}
-      <View style={styles.carouselContainer}>
-        {carouselData.length === 0 ? (
-          <Text style={[styles.emptyGlobalText, { color: colors.textSecondary }]}>Nie masz jeszcze wspólnych list. Zeskanuj kod QR od znajomego!</Text>
-        ) : (
-          <FlatList
-            horizontal
-            data={carouselData as any[]}
-            keyExtractor={(item) => item.type === 'invitation' ? `inv-${item.id}` : `list-${item.id}`}
-            showsHorizontalScrollIndicator={false}
-            
-            // Dokładnie te same bezpieczne ustawienia
-            snapToOffsets={carouselData.map((_, i) => i * SNAP_INTERVAL)}
-            disableIntervalMomentum={true} 
-            
-            decelerationRate="fast"
-            contentContainerStyle={{ paddingHorizontal: (width - SNAP_INTERVAL) / 2 }}
-            
-            renderItem={({ item }) => {
-              if (item.type === 'invitation') {
-                return (
-                  <InvitationPreviewCard 
-                    invitation={item as Invitation} 
-                    onAccept={() => handleAcceptInvitation(item.id)}
-                    onDecline={() => handleDeclineInvitation(item.id)}
-                  />
-                );
-              } else {
-                return (
-                  <ListPreviewCard 
-                    list={item} 
-                    onPress={() => router.push({
-                      pathname: `/list/${item.id}`,
-                      params: { name: item.name }
-                    } as any)}
-                    onLongPress={() => {
-                      setSelectedListForSettings(item);
-                      setIsSettingsVisible(true);
-                    }}
-                  />
-                );
-              }
-            }}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
-        )}
-      </View>
+        }
+      >
+        <View style={styles.titleContainer}>
+                  <Text style={[styles.mainTitle, { color: colors.text }]}>Wspólne Listy</Text>
+                  <Text style={[styles.subTitle, { color: colors.textSecondary }]}>Zarządzaj swoimi zadaniami efektywnie.</Text>
+        </View>
+
+
+        {/* KARUZELA WSPÓLNYCH LIST */}
+        <View style={styles.carouselContainer}>
+          {carouselData.length === 0 ? (
+            <Text style={[styles.emptyGlobalText, { color: colors.textSecondary }]}>Nie masz jeszcze wspólnych list. Zeskanuj kod QR od znajomego!</Text>
+          ) : (
+            <FlatList
+              horizontal
+              data={carouselData as any[]}
+              keyExtractor={(item) => item.type === 'invitation' ? `inv-${item.id}` : `list-${item.id}`}
+              showsHorizontalScrollIndicator={false}
+
+              // Dokładnie te same bezpieczne ustawienia
+              snapToOffsets={carouselData.map((_, i) => i * SNAP_INTERVAL)}
+              disableIntervalMomentum={true}
+
+              decelerationRate="fast"
+              contentContainerStyle={{ paddingHorizontal: (width - SNAP_INTERVAL) / 2 }}
+
+              renderItem={({ item }) => {
+                if (item.type === 'invitation') {
+                  return (
+                    <InvitationPreviewCard
+                      invitation={item as Invitation}
+                      onAccept={() => handleAcceptInvitation(item.id)}
+                      onDecline={() => handleDeclineInvitation(item.id)}
+                    />
+                  );
+                } else {
+                  return (
+                    <ListPreviewCard
+                      list={item}
+                      onPress={() => router.push({
+                        pathname: `/list/${item.id}`,
+                        params: { name: item.name }
+                      } as any)}
+                      onLongPress={() => {
+                        setSelectedListForSettings(item);
+                        setIsSettingsVisible(true);
+                      }}
+                    />
+                  );
+                }
+              }}
+            />
+          )}
+        </View>
+      </ScrollView>
       
       <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => setIsScanning(true)}>
         <Ionicons name="qr-code-outline" size={24} color={colors.onPrimary} />
