@@ -1,12 +1,14 @@
 // app/list/[id].tsx
 import { Ionicons } from '@expo/vector-icons';
-import { generateShareLinkAPI } from '../../src/utils/api';
+import { API_URL, archiveListAPI, fetchActivityLogs, generateShareLinkAPI, refreshAccessToken } from '../../src/utils/api';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Share,
@@ -36,7 +38,6 @@ import {
 } from '../../src/database/repositories';
 import { useTodoWebSocket } from '../../src/hooks/useTodoWebSocket';
 import { performPull, performSync } from '../../src/services/syncService';
-import { archiveListAPI, fetchActivityLogs } from '../../src/utils/api';
 
 export default function ListDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
@@ -56,10 +57,13 @@ export default function ListDetailScreen() {
   const [editMode, setEditMode] = useState(0);
 
   // --- STANY WEBSOCKET I AKTYWNOŚCI ---
-  const { latestActivity, isConnected } = useTodoWebSocket(id as string);
+  const { latestActivity, viewers, isConnected } = useTodoWebSocket(id as string);
   const [isActivityFeedVisible, setIsActivityFeedVisible] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [isShareModalVisible, setIsShareModalVisible] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const router = useRouter();
 
@@ -120,6 +124,48 @@ export default function ListDetailScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        let token = await SecureStore.getItemAsync('accessToken');
+        if (!token) return;
+
+        let response = await fetch(`${API_URL}/auth/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+          token = await refreshAccessToken();
+          if (!token) return;
+          response = await fetch(`${API_URL}/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch current user profile", e);
+      }
+    };
+
+    fetchCurrentUser();
+
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
 
   // JEDEN POPRAWNY USE_EFFECT DLA WEBSOCKETA
   useEffect(() => {
@@ -456,6 +502,17 @@ export default function ListDetailScreen() {
         </View>
 
         <View style={[styles.floatingInputWrapper, { paddingBottom: Math.max(24, insets.bottom + 10) }]}>
+          {!isKeyboardVisible && viewers && viewers.filter(v => currentUser && v.email !== currentUser.email && v.username !== currentUser.username).length > 0 && (
+            <View style={styles.viewersContainer}>
+              {viewers.filter(v => currentUser && v.email !== currentUser.email && v.username !== currentUser.username).map(viewer => (
+                <View key={viewer.userId} style={[styles.viewerAvatar, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.viewerInitial}>
+                    {(viewer.username || viewer.email || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
           {!isInputVisible && !selectedTaskForSubtask ? (
             <TouchableOpacity 
               style={[styles.fabButton, { backgroundColor: colors.primary }]} 
@@ -682,6 +739,33 @@ const styles = StyleSheet.create({
   swipeActionText: {
     fontSize: 10,
     marginTop: 4,
+    fontWeight: 'bold',
+  },
+  viewersContainer: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 16,
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  viewerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    marginLeft: -8, // slight overlap for multiple viewers
+  },
+  viewerInitial: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });
